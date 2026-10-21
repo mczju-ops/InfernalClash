@@ -1,0 +1,40 @@
+id: blaze_guard
+type: SUMMON
+display-name: "<blue>烈焰守卫"
+flavor: "它不追你——它盯着你，然后越打越痛。"
+description:
+  - "<gray>召唤一只 <white>40</white> 血的烈焰人，无法移动、无法被击退，并且带<white>嘲讽</white>。"
+  - "<gray>它不能发射火球：索敌范围为半径 <white>12</white> 格的圆形，锁定第一个敌人后不再更换目标，直到自己被眩晕或目标死亡。"
+  - "<gray>锁定目标后，对该目标的伤害从每 <white>0.5</white> 秒 <white>1</white> 点起、每 <white>0.5</white> 秒增加 <white>1</white> 点，最高每 <white>0.5</white> 秒 <white>10</white> 点；重新索敌时重置。"
+icon: BLAZE_ROD
+cost: 5
+cooldown-ticks: 600
+rarity: RARE
+
+summon:
+  group:
+    - entity: BLAZE
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: true
+  building: true
+  stationary: true
+  targeting: LOCK_ON
+  target-radius: 12
+  ramping-damage:
+    base: 1
+    step: 1
+    max: 10
+    interval-ticks: 10  # 0.5 秒
+  attributes:
+    health: 40.0
+    knockback-resistance: 1.0
+  abilities:
+    - id: poison_on_summon
+      trigger: ON_SUMMON
+      effects:
+        - type: POTION
+          effect: WITHER
+          amplifier: 0
+          duration-ticks: 72000

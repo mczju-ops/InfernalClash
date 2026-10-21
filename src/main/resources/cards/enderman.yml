@@ -1,0 +1,19 @@
+id: enderman
+type: SUMMON
+display-name: "<green>末影人"
+flavor: "它不搬东西，也不挪窝。"
+description:
+  - "<gray>召唤一只末影人（原版 <white>40</white> 血）。"
+  - "<gray>它免疫远程伤害，且被禁止传送。"
+icon: ENDER_PEARL
+cost: 4
+cooldown-ticks: 400
+rarity: COMMON
+
+summon:
+  group:
+    - entity: ENDERMAN
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false

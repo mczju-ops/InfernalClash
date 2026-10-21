@@ -1,0 +1,33 @@
+id: fox_guide
+type: SPELL
+display-name: "<light_purple>灵狐引路"
+flavor: "三只狐狸从紫色的裂隙里钻出来。"
+description:
+  - "<gray>在自身或准星所指的一格，经 <white>2</white> 秒前摇召唤 <white>3</white> 只灵狐刺客（狐狸，嘴叼钻石剑）。"
+icon: SWEET_BERRIES
+cost: 3
+cooldown-ticks: 200
+rarity: EPIC
+
+spell:
+  targeting: GROUND
+  shape:
+    type: SINGLE
+    origin: IMPACT
+  effects:
+    # 2026-10-21：`SUMMON` → `SUMMON_DELAYED`（2 秒召唤前摇 = 40 tick）
+    - type: SUMMON_DELAYED
+      delay-ticks: 40
+      count: 3
+      group:
+        entity: FOX
+        name: "灵狐刺客"
+        count: 3
+        equipment:
+          main-hand: DIAMOND_SWORD
+  fx:
+    particle: PORTAL
+    sound: entity.enderman.teleport
+    # 前摇期间：从落点向上打一条龙息光柱（持续 40 tick = 与 delay-ticks 一致）
+    pillar: DRAGON_BREATH
+    pillar-ticks: 40

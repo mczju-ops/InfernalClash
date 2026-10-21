@@ -1,0 +1,65 @@
+id: sea_king
+type: SUMMON
+display-name: "<red>海王"
+flavor: "三叉戟一落，海水都替他让路。"
+description:
+  - "<gray>召唤一只手持三叉戟、身穿钻石海岸纹样铁套的溺尸。"
+  - "<gray>登场时眩晕自身 <white>2</white> 格半径内的所有敌人，并造成 <white>8</white> 点伤害。"
+  - "<gray>攻击命中时眩晕该目标 <white>1</white> 秒。"
+icon: TRIDENT
+cost: 4
+cooldown-ticks: 200
+rarity: LEGENDARY
+
+summon:
+  group:
+    - entity: DROWNED
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  block-ranged: true
+  equipment:
+    helmet: IRON_HELMET
+    chestplate: IRON_CHESTPLATE
+    leggings: IRON_LEGGINGS
+    boots: IRON_BOOTS
+    main-hand: TRIDENT
+    trim:
+      helmet: { material: DIAMOND, pattern: COAST }
+      chestplate: { material: DIAMOND, pattern: COAST }
+      leggings: { material: DIAMOND, pattern: COAST }
+      boots: { material: DIAMOND, pattern: COAST }
+  abilities:
+    - id: stun_on_summon
+      trigger: ON_SUMMON
+      targets: ENEMIES
+      radius: 2
+      include-self: false
+      fx:
+        particle: ELECTRIC_SPARK
+        sound: entity.lightning_bolt.thunder
+        lightning: true
+      effects:
+        - type: DAMAGE
+          amount: 8
+        - type: STUN
+          duration-ticks: 40
+    - id: area_damage_periodically
+      trigger: PERIODIC
+      cooldown-ticks: 60
+      center: ATTACK_TARGET
+      targets: ENEMIES
+      search-radius: 8
+      radius: 0  # 只有目标所在的那一格
+      include-self: false
+      fx:
+        particle: ELECTRIC_SPARK
+        sound: entity.lightning_bolt.thunder
+        lightning: true
+        line: false
+      effects:
+        - type: DAMAGE
+          amount: 8
+        - type: STUN
+          duration-ticks: 20  # 1 秒

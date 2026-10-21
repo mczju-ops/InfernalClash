@@ -1,0 +1,31 @@
+id: allay
+type: SUMMON
+display-name: "<light_purple>悦灵"
+flavor: "它只唱 40 秒的歌，但每一句都值钱。"
+description:
+  - "<gray>召唤一只<white>无法移动</white>的悦灵，<white>40</white> 秒后自行消失。"
+  - "<gray>每 <white>5</white> 秒为召唤者提供 <white>1</white> 级经验。"
+icon: AMETHYST_SHARD
+cost: 6
+cooldown-ticks: 800
+rarity: EPIC
+
+summon:
+  group:
+    - entity: ALLAY
+      count: 1
+      offset: { forward: 0, right: 0 }
+      lifetime-ticks: 800
+  placement: GROUND_OR_SELF
+  taunt: false
+  building: true
+  stationary: true
+  attributes:
+    knockback-resistance: 1.0
+  abilities:
+    - id: gain_xp_periodically
+      trigger: PERIODIC
+      cooldown-ticks: 100
+      effects:
+        - type: GRANT_XP
+          amount: 1

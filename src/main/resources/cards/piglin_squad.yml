@@ -1,0 +1,22 @@
+id: piglin_squad
+type: SUMMON
+display-name: "<green>猪鼻灵"
+flavor: "五把金剑，一种口音。"
+description:
+  - "<gray>召唤五名手持金剑的猪灵。"
+icon: GOLD_INGOT
+cost: 5
+cooldown-ticks: 200
+rarity: COMMON
+
+summon:
+  group:
+    - entity: PIGLIN
+      count: 5
+      offset: { forward: 0, right: 0 }
+      spread: 1.5
+      formation: PENTAGON
+  placement: GROUND_OR_SELF
+  taunt: false
+  equipment:
+    main-hand: GOLDEN_SWORD

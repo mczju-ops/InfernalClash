@@ -1,0 +1,29 @@
+id: storm
+type: SPELL
+display-name: "<blue>暴风雨"
+flavor: "乌云只在你指的那一格上裂开。"
+description:
+  - "<gray>以自身或准星所指的一格为中心，半径 <white>6</white> 格。"
+  - "<gray>取范围内血量最高的<white>三名</white>敌人依次落雷（每道间隔 <white>0.5</white> 秒），各受 <white>28</white> 点伤害并被眩晕 <white>2</white> 秒。"
+  - "<gray>不足三名时，按实际人数各打一次。"
+icon: LIGHTNING_ROD
+cost: 6
+cooldown-ticks: 400
+rarity: RARE
+
+spell:
+  targeting: GROUND
+  shape:
+    type: CIRCLE
+    radius: 6
+    origin: IMPACT
+  select:
+    rule: HIGHEST_HEALTH
+    count: 3
+  effects:
+    - type: DAMAGE
+      amount: 28
+    - type: STUN
+      duration-ticks: 40  # 2 秒
+  fx:
+    lightning: true

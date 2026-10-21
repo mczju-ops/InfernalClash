@@ -1,0 +1,48 @@
+id: necromancer
+type: SUMMON
+display-name: "<green>死灵法师"
+flavor: "死人不着急，反正有的是时间。"
+description:
+  - "<gray>召唤一名死灵法师（僵尸）。"
+  - "<gray>每 <white>3</white> 秒，对 <white>8</white> 格内的目标释放一次造成 <white>20</white> 点伤害的火球术。"
+icon: WITHER_SKELETON_SKULL
+cost: 5
+cooldown-ticks: 400
+rarity: COMMON
+
+summon:
+  group:
+    - entity: SKELETON
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  stop-when-target-within: 8
+  attributes:
+    health: 40.0
+  equipment:
+    helmet: LEATHER_HELMET
+    chestplate: LEATHER_CHESTPLATE
+    leggings: LEATHER_LEGGINGS
+    boots: LEATHER_BOOTS
+    color: BLUE
+    main-hand: WOODEN_HOE
+    trim:
+      helmet: { material: GOLD, pattern: DUNE }
+      chestplate: { material: GOLD, pattern: VEX }
+      leggings: { material: GOLD, pattern: COAST }
+  abilities:
+    - id: fireball_periodically
+      trigger: PERIODIC
+      cooldown-ticks: 70
+      center: NEAREST_ENEMY
+      search-radius: 8
+      radius: 2
+      targets: ENEMIES
+      include-self: false
+      fx:
+        particle: FLAME
+        sound: entity.blaze.shoot
+      effects:
+        - type: DAMAGE
+          amount: 20

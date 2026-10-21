@@ -1,0 +1,27 @@
+id: flame_fan
+type: SPELL
+display-name: "<light_purple>烈焰扇击"
+flavor: "你抬手一扇，火焰就替你画了个扇面。"
+description:
+  - "<gray>朝落点方向扇出半径 <white>8</white> 格、张角 <white>120°</white> 的火焰扇面。"
+  - "<gray>范围内敌人各受 <white>12</white> 点伤害，并被点燃 <white>3</white> 秒。"
+icon: BLAZE_POWDER
+cost: 4
+cooldown-ticks: 400
+rarity: EPIC
+
+spell:
+  targeting: GROUND
+  shape:
+    type: CONE
+    radius: 8
+    angle: 120
+    origin: IMPACT
+  effects:
+    - type: DAMAGE
+      amount: 12
+    - type: IGNITE
+      duration-ticks: 60  # 3 秒
+  fx:
+    particle: FLAME
+    sound: entity.blaze.shoot

@@ -1,0 +1,21 @@
+id: gold_apothecary
+type: SUMMON
+display-name: "<light_purple>金牌药剂师"
+flavor: "她的药水从不问敌我——这是她的招牌。"
+description:
+  - "<gray>召唤一名女巫，由她自己投掷药水。"
+  - "<gray>原版溅射药水<white>不区分阵营</white>，可能波及友方单位。"
+icon: BREWING_STAND
+cost: 3
+cooldown-ticks: 400
+rarity: EPIC
+
+summon:
+  group:
+    - entity: WITCH
+      count: 1
+      offset: { forward: 0, right: 0 }
+      attributes:
+        movement-speed: 0.5
+  placement: GROUND_OR_SELF
+  taunt: false

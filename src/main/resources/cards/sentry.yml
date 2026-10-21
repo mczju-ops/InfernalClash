@@ -1,0 +1,29 @@
+id: sentry
+type: SUMMON
+display-name: "<white>哨位"
+flavor: "它不需要挪动一步。"
+description:
+  - "<gray>召唤一只潜影贝哨位。"
+  - "<gray>带<white>嘲讽</white>，无法移动、无法被击退，登场时带<white>凋零 I</white>。"
+icon: SHULKER_SHELL
+cost: 3
+cooldown-ticks: 200
+rarity: BASIC
+
+summon:
+  group:
+    - entity: SHULKER
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: true
+  building: true
+  stationary: true
+  abilities:
+    - id: poison_on_summon
+      trigger: ON_SUMMON
+      effects:
+        - type: POTION
+          effect: WITHER
+          amplifier: 0
+          duration-ticks: 72000

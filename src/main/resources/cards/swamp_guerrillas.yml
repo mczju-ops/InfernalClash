@@ -1,0 +1,31 @@
+id: swamp_guerrillas
+type: SUMMON
+display-name: "<white>沼泽游击队"
+flavor: "沼泽里出来的，从来不讲究队形。"
+description:
+  - "<gray>召唤三名沼骸。"
+  - "<gray>每个生命 <white>8</white>，体型 <white>×0.8</white>，登场时获得速度 II。"
+icon: SLIME_BLOCK
+cost: 1
+cooldown-ticks: 200
+rarity: BASIC
+
+summon:
+  group:
+    - entity: BOGGED
+      count: 3
+      offset: { forward: 0, right: 0 }
+      spread: 1.0
+  placement: GROUND_OR_SELF
+  taunt: false
+  attributes:
+    health: 8
+    scale: 0.8
+  abilities:
+    - id: speed_on_summon
+      trigger: ON_SUMMON
+      effects:
+        - type: POTION
+          effect: SPEED
+          amplifier: 1
+          duration-ticks: 100000

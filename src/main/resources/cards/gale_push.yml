@@ -1,0 +1,28 @@
+id: gale_push
+type: SPELL
+display-name: "<blue>狂风推进"
+flavor: "风从你背后吹起来，把敌人一路推着走。"
+description:
+  - "<gray>沿你的面朝方向刮出一道宽 <white>3</white> 格、长 <white>8</white> 格的风墙，持续 <white>3</white> 秒。"
+  - "<gray>范围内的敌人被持续推向该方向，并每秒受到 <white>4</white> 点伤害。"
+  - "<gray>只推<white>敌人</white>，不推友方与玩家。"
+icon: FEATHER
+cost: 2
+cooldown-ticks: 500
+rarity: RARE
+
+spell:
+  targeting: GROUND
+  shape:
+    type: RECTANGLE
+    width: 3
+    length: 8
+    origin: IMPACT
+  effects:
+    - type: DAMAGE
+      amount: 4
+    - type: PUSH
+      duration-ticks: 60  # 3 秒
+  fx:
+    particle: SWEEP_ATTACK
+    sound: entity.breeze.wind_burst

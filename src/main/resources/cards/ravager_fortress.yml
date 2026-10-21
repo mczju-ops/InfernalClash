@@ -1,0 +1,35 @@
+id: ravager_fortress
+type: SUMMON
+display-name: "<light_purple>劫掠堡垒"
+flavor: "一座会走路的攻城塔。"
+description:
+  - "<gray>召唤一只 <white>100</white> 血的劫掠兽。"
+  - "<gray>它背上骑乘 <white>1</white> 名劲弩手；劫掠兽移动缓慢。"
+icon: SADDLE
+cost: 8
+cooldown-ticks: 800
+rarity: EPIC
+
+summon:
+  group:
+    - entity: RAVAGER
+      count: 1
+      offset: { forward: 0, right: 0 }
+      attributes:
+        health: 100
+        movement-speed: 0.5
+    - entity: PILLAGER
+      count: 1
+      offset: { forward: 0, right: 0 }
+      mount: RAVAGER
+  placement: GROUND_OR_SELF
+  taunt: false
+  affected-by-building: true
+  equipment:
+    groups: [PILLAGER]
+    main-hand: CROSSBOW
+  ray:
+    groups: [PILLAGER]
+    damage: 2
+    interval-ticks: 10
+    particle: PORTAL

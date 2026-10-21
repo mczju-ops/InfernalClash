@@ -1,0 +1,32 @@
+id: immortal_banner
+type: SUMMON
+display-name: "<red>不朽旗手"
+flavor: "旗子不倒，阵线就不散。"
+description:
+  - "<gray>召唤一只 <white>60</white> 血的卫道士。"
+  - "<gray>它会主动移动，并且带<white>嘲讽</white>。"
+  - "<gray>死亡时对周围 <white>3</white> 格内的敌人造成 <white>8</white> 点伤害。"
+icon: WHITE_BANNER
+cost: 6
+cooldown-ticks: 600
+rarity: LEGENDARY
+
+summon:
+  group:
+    - entity: VINDICATOR
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: true
+  building: true
+  attributes:
+    health: 60.0
+  abilities:
+    - id: deathrattle_damage
+      trigger: ON_DEATH
+      targets: ENEMIES
+      radius: 3
+      include-self: false
+      effects:
+        - type: DAMAGE
+          amount: 8

@@ -1,0 +1,30 @@
+id: bloodlust
+type: SPELL
+display-name: "<light_purple>嗜血"
+flavor: "一声龙吼，所有人红着眼往前冲。"
+description:
+  - "<gray>以自身或准星所指的一格为中心，半径 <white>5</white> 格。"
+  - "<gray>范围内<white>所有友方单位（含玩家）</white>获得 <white>8</white> 秒<white>力量 II</white>与<white>速度 II</white>。"
+icon: RED_DYE
+cost: 2
+cooldown-ticks: 600
+rarity: EPIC
+
+spell:
+  targeting: ALLY
+  shape:
+    type: CIRCLE
+    radius: 5
+    origin: IMPACT
+  effects:
+    - type: POTION
+      effect: STRENGTH
+      amplifier: 1
+      duration-ticks: 160
+    - type: POTION
+      effect: SPEED
+      amplifier: 1
+      duration-ticks: 160
+  fx:
+    particle: DRAGON_BREATH
+    sound: entity.ender_dragon.growl

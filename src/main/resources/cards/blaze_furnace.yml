@@ -1,0 +1,65 @@
+id: blaze_furnace
+type: SUMMON
+display-name: "<light_purple>烈焰熔炉"
+flavor: "它不追你，它只是站在那里，把一切烧成灰。"
+description:
+  - "<gray>召唤一只<white>最大形态</white>的岩浆怪，体型再放大 <white>20%</white>；无法移动、无法被击退，并且带<white>嘲讽</white>。"
+  - "<gray>每 <white>5</white> 秒召唤 <white>2</white> 只熔岩精灵，自己死亡时再召唤 <white>2</white> 只。"
+icon: BLAST_FURNACE
+cost: 4
+cooldown-ticks: 600
+rarity: EPIC
+
+summon:
+  group:
+    - entity: MAGMA_CUBE
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: true
+  building: true
+  stationary: true
+  attributes:
+    scale: 1.2
+    health: 28
+    size: 4
+    knockback-resistance: 1.0
+  abilities:
+    - id: poison_on_summon
+      trigger: ON_SUMMON
+      effects:
+        - type: POTION
+          effect: WITHER
+          amplifier: 0
+          duration-ticks: 72000
+    - id: summon_periodically
+      trigger: PERIODIC
+      cooldown-ticks: 100
+      effects:
+        - type: SUMMON
+          group: &lava_sprite
+            entity: MAGMA_CUBE
+            count: 1
+            name: "熔岩精灵"
+            attributes: { size: 1 }
+            abilities:
+              - id: speed_on_summon
+                trigger: ON_SUMMON
+                effects:
+                  - type: POTION
+                    effect: SPEED
+                    amplifier: 4
+                    duration-ticks: 72000
+              - id: on_attack
+                trigger: ON_ATTACK
+                effects:
+                  - type: IGNITE
+        - type: SUMMON
+          group: *lava_sprite
+    - id: summon_on_death
+      trigger: ON_DEATH
+      effects:
+        - type: SUMMON
+          group: *lava_sprite
+        - type: SUMMON
+          group: *lava_sprite

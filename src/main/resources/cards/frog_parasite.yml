@@ -1,0 +1,51 @@
+id: frog_parasite
+type: SUMMON
+display-name: "<green>异蛙寄生体"
+flavor: "它走不动，但它带的东西能。"
+description:
+  - "<gray>召唤一只巨型青蛙：生命 <white>24</white>，体型 <white>×4</white>，带<white>嘲讽</white>。"
+  - "<gray>它无法移动、无法攻击，登场时带<white>凋零 I</white>。"
+  - "<gray>每 <white>5</white> 秒召唤一只蠹虫；死亡时再生成 <white>4</white> 只蠹虫。"
+icon: SLIME_BALL
+cost: 3
+cooldown-ticks: 200
+rarity: COMMON
+
+summon:
+  group:
+    - entity: FROG
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: true
+  building: true
+  stationary: true
+  attributes:
+    health: 24
+    scale: 4
+    knockback-resistance: 1.0
+  abilities:
+    - id: poison_on_summon
+      trigger: ON_SUMMON
+      effects:
+        - type: POTION
+          effect: WITHER
+          amplifier: 0
+          duration-ticks: 72000
+    - id: summon_periodically
+      trigger: PERIODIC
+      cooldown-ticks: 100
+      effects:
+        - type: SUMMON
+          group:
+            entity: SILVERFISH
+            name: "蠹虫"
+            count: 1
+    - id: summon_on_death
+      trigger: ON_DEATH
+      effects:
+        - type: SUMMON
+          group:
+            entity: SILVERFISH
+            name: "蠹虫"
+            count: 4

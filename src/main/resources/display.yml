@@ -1,0 +1,120 @@
+# 配置结构版本号（将来做破坏性迁移时靠它判断）
+config-version: 1
+
+messages:
+
+  shop.title: "<dark_gray>商店"
+  # 第 4 行第 1 格（槽位 27）「你的金币数」的展示文本
+  shop.balance: "<gold>你的金币：<yellow>{gold}"
+  # 第 4 行第 9 格（槽位 35）「退出」按钮名
+  shop.close: "<red>关闭"
+  # 购买按钮名（{count} = 包数：1 / 10 / 30）
+  shop.buy-pack: "<green>购买 {count} 个卡牌包"
+  # 购买按钮的 lore
+  shop.buy-pack-lore:
+    - "<gray><gold>{price} 金币"
+    - "<gray>包含 <white>5</white> 张卡牌"
+  shop.pack-result: "<green>开包结果：<white>{packs}</white> 包 / <white>{cards}</white> 张，重复卡自动转尘 <gold>+{dust}</gold>"
+  shop.pack-line: "  <gray>· <white>{card}</white>（{rarity}）{gold}"
+  shop.pack-not-enough: "<red>金币不足：需要 <gold>{price}</gold>，你有 <gold>{gold}</gold>（本次未扣金币、未发卡）"
+
+  collection.title: "<dark_gray>图鉴与卡组"
+  # 第 1 行第 1 格（槽位 0）「保存预设」按钮名
+  deck.save: "<green>保存卡组预设"
+  deck.next-preset: "<green>下一个卡组"
+  # U3 二级确认界面：点未拥有的卡时弹出（原文：「是否确认花费（cost）烈焰粉解锁卡牌？」）
+  # {cost} = 烈焰粉价格（economy.yml 的 unlock-price），{card} = 卡名
+  collection.unlock-confirm: "<yellow>花费 <gold>{cost}</gold> 烈焰粉解锁 <white>{card}</white>？"
+  collection.unlock-title: "<dark_gray>确认解锁"
+
+  leaderboard.title: "<gold>炒鸡战争排行榜"
+  leaderboard.subtitle: "<gray>胜场 / 总场次 / 最高连胜"
+
+  match.hud-title: "<gray>对局时间"
+  match.hud-overtime: "<red>加时"
+  match.hud-sidebar: "<gold>炒鸡战争"
+
+  match.select-title: "<dark_gray>选择卡组"
+  # 第 1 行第 1 格（槽位 0）「确认卡组」按钮名
+  match.confirm: "<green>确认卡组"
+  match.select-hint: "<gray>点击图鉴中的卡牌卡 → 点击 8 个空卡槽之一放入 → 放满 8 张后点击「确认卡组」"
+  match.prep-menu: "<gold>选卡菜单"
+  # 上面那件物品的 lore（多行键；形状与 shop.buy-pack-lore 一致）
+  match.prep-menu-lore:
+    - "<gray>右键打开选卡界面"
+  match.surrender: "<dark_gray>投降"
+  match.surrender-confirm: "<red>确认投降"
+  # 「取消」按钮名（关掉界面）
+  match.surrender-cancel: "<gray>取消"
+  match.surrender-hint: "<gray>右键打开投降菜单（确认投降 / 取消）"
+  match.battle-menu-pending: "<gray>投降菜单暂时打不开（原因见控制台日志）"
+  match.bot-window: "<yellow>即将开启人机对局。"
+  # ★★★ 2026-10-21（用户：「对局结束时需要在对话框里标注获得的金币数目」）
+  #   对局结算后**逐个玩家**发（胜负两边的数目不同）；{gold} = 本局**实际加进档案**的金币数
+  #   （含首通那一笔；金币接近上限时可能小于「对局 + 首通」）。
+  match.payout: "<green>本局获得金币 <gold>+{gold}</gold>"
+  # 只有「第一次完成对局」那一局才会多出这一行；{bonus} = 首通额外奖励
+  match.payout-first-game: "<gold>首次完成对局：额外 +{bonus} 金币</gold>"
+
+  errors.not-enough-gold: "<red>金币不足"
+  # 烈焰粉不足（图鉴合成 / U3）
+  errors.not-enough-powder: "<red>烈焰粉不足"
+  errors.not-your-half: "<red>召唤牌只能在己方半场使用"
+
+  errors.not-in-match: "<red>你现在不在对局中。"
+  errors.not-battle-phase: "<red>现在不是战斗阶段，不能出牌。"
+  errors.no-side: "<red>你没有阵营（本局为 1v1，多余玩家不参与）。"
+  errors.unknown-card: "<red>未知卡牌：{card}"
+  errors.not-enough-xp: "<red>经验不足：这张卡需要 {cost}，还差 {missing}。"
+  errors.card-on-cooldown: "<red>{card} 这张卡还在冷却：还要等 <white>{seconds}</white> 秒。"
+  errors.summon-failed-refunded: "<red>召唤失败（详见控制台日志）—— 已退还费用与冷却。"
+  errors.spell-failed-refunded: "<red>法术未能施放：{note}（已退还费用与冷却）"
+  errors.spell-needs-ally: "<red>这张法术需要准星指向一个<white>友方召唤物</white>（{aim}）"
+  errors.half-not-configured: "<red>召唤失败：竞技场的半场范围还没配置（arenas.yml 的 half.red.1/2 与 half.blue.1/2 四个角点）—— 已按安全口径拒绝施放。请用 /incl arena 编辑点位后重开一局。"
+  errors.summon-refused: "<red>召唤失败：{reason}"
+  errors.summons-cannot-be-attacked: "<red>你的力量不足以伤害到召唤物"
+  errors.echo-no-previous: "<red>回响：本局你还没有打出过任何牌 —— 它不能当第一张牌打出（没有消耗费用与冷却）。"
+
+  command.no-permission: "<red>你没有权限使用这条指令"
+  # 控制台 / 玩家执行需要玩家的指令（如 /incl shop）时的提示
+  command.players-only: "<red>这条指令只能由玩家在游戏里执行"
+  # 子命令不认识（例 /incl 后面跟了没定义的分支）时的用法提示；{usage} = 用法串
+  command.usage: "<gray>用法：{usage}"
+  command.debug-usage: "<gray>用法：{usage}"
+  command.room-usage: "<gray>用法：{usage}"
+  # /incl debug reload 成功
+  command.reload-ok: "<green>配置已重新加载并通过校验。"
+  # /incl debug reload 失败；{error} = ConfigError.describe()（文件 + 完整键路径）
+  command.reload-failed: "<red>配置重载失败：{error}"
+  # /incl debug room reset 的结果；{reset} / {total} = 复位数 / 房间总数（带数量便于对账）
+  command.room-reset-done: "<green>已复位 {reset} / {total} 个房间为 READY。"
+  # /incl debug room reset 时本游戏一个房间实例都没有
+  command.room-none: "<yellow>本游戏还没有任何房间实例。"
+  command.player-not-found: "<red>找不到这名在线玩家：{player}"
+  # 数量参数不是合法数字（如 set-gold / set-powder）的提示
+  command.invalid-amount: "<red>数量必须是合法的十进制整数。"
+  command.bot-header: "<gold>人机开关 · {player} · 本房间（{room}）　{action}{changed}"
+  command.bot-on: "<green>已添加电脑玩家"
+  command.bot-off: "  <green>已删除电脑玩家"
+  command.bot-off-hint: ""
+
+  arena-edit.title: "<dark_gray>竞技场编辑"
+  arena-edit.point: "<yellow>{point}"
+  arena-edit.bind: "<gray>左键：把「打开界面时站的位置」绑定到这里"
+  arena-edit.teleport: "<gray>右键：传送到已保存的坐标查看"
+  # 点位尚为空时的展示
+  arena-edit.point-empty: "<dark_gray>未采集"
+
+icons:
+
+  shop:
+    buy1:  { material: CHEST,           name: "<green>购买 1 个卡牌包" }
+    buy10: { material: CHEST,           name: "<green>购买 10 个卡牌包" }
+    # 第 4 行第 9 格（槽位 35）退出（示例用 BARRIER + <red>退出；
+    # shop.close 是同一件事的文案条目，两者由 UI 层选择用哪个）
+    exit:  { material: BARRIER,         name: "<red>退出" }
+
+  collection:
+    prev:   { material: ARROW,           name: "<yellow>上一页" }
+    next:   { material: ARROW,           name: "<yellow>下一页" }
+    locked: { material: BLACK_CONCRETE,  name: "<dark_gray>???" }

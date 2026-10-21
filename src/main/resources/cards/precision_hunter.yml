@@ -1,0 +1,29 @@
+id: precision_hunter
+type: SUMMON
+display-name: "<white>精密猎手"
+flavor: "每一次呼吸都算好了提前量。"
+description:
+  - "<gray>召唤一名手持力量 V 弓、身穿绿色皮革套装的骷髅。"
+icon: SPECTRAL_ARROW
+cost: 2
+cooldown-ticks: 200
+rarity: BASIC
+
+summon:
+  group:
+    - entity: SKELETON
+      count: 1
+      offset: { forward: 0, right: 0 }
+      spread: 1.0
+  placement: GROUND_OR_SELF
+  taunt: false
+  equipment:
+    main-hand: BOW
+    helmet: LEATHER_HELMET
+    chestplate: LEATHER_CHESTPLATE
+    leggings: LEATHER_LEGGINGS
+    boots: LEATHER_BOOTS
+    color: GREEN
+    enchantments:
+      main-hand:
+        power: 5

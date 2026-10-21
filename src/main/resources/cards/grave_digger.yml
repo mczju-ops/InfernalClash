@@ -1,0 +1,32 @@
+id: grave_digger
+type: SPELL
+display-name: "<red>掘墓者"
+flavor: "土先翻开，人才从里面爬出来。"
+description:
+  - "<gray>在自身或准星所指的一格等待 <white>3</white> 秒，然后召唤一名持铁镐、头戴南瓜灯的僵尸。"
+  - "<gray>这名僵尸有 <white>40</white> 血。"
+icon: IRON_SHOVEL
+cost: 3
+cooldown-ticks: 600
+rarity: LEGENDARY
+
+spell:
+  targeting: GROUND
+  shape:
+    type: SINGLE
+    origin: IMPACT
+  effects:
+    - type: SUMMON_DELAYED
+      group:
+        entity: ZOMBIE
+        name: "矿工僵尸"
+        attributes:
+          health: 40
+        equipment:
+          helmet: JACK_O_LANTERN
+          main-hand: IRON_PICKAXE
+      count: 1
+      delay-ticks: 60
+  fx:
+    block: DIRT
+    sound: block.gravel.break

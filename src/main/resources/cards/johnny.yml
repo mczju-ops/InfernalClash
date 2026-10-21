@@ -1,0 +1,18 @@
+id: johnny
+type: SUMMON
+display-name: "<green>强尼"
+flavor: "他一言不发，只是举起了斧头。"
+description:
+  - "<gray>召唤一名手持铁斧的卫道士。"
+icon: IRON_AXE
+cost: 4
+cooldown-ticks: 400
+rarity: COMMON
+
+summon:
+  group:
+    - entity: VINDICATOR
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false

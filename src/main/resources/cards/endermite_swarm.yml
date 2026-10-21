@@ -1,0 +1,23 @@
+id: endermite_swarm
+type: SUMMON
+display-name: "<blue>虫群"
+flavor: "一只不算什么，十只就够你后退了。"
+description:
+  - "<gray>一次召唤 <white>10</white> 只末影螨。"
+  - "<gray>体型放大 <white>1.5</white> 倍，且不会自然消失。"
+icon: END_STONE
+cost: 3
+cooldown-ticks: 400
+rarity: RARE
+
+summon:
+  group:
+    - entity: ENDERMITE
+      count: 10
+      offset: { forward: 0, right: 0 }
+      spread: 1.0
+      rows: [3, 4, 3]
+  placement: GROUND_OR_SELF
+  taunt: false
+  attributes:
+    scale: 1.5

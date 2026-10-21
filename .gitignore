@@ -1,0 +1,12 @@
+﻿# 构建产物
+target/
+*.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 系统
+Thumbs.db
+.DS_Store

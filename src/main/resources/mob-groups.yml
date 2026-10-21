@@ -1,0 +1,107 @@
+groups:
+  ALLAY:
+    ai:
+      mode: AUTO
+  AXOLOTL:
+    ai:
+      mode: AUTO
+  BLAZE:
+    ai:
+      mode: AUTO
+  BOGGED:
+    ai:
+      mode: AUTO
+  COPPER_GOLEM:
+    ai:
+      mode: AUTO
+  CREEPER:
+    ai:
+      mode: AUTO
+  DROWNED:
+    ai:
+      mode: AUTO
+  ENDERMAN:
+    ai:
+      mode: AUTO
+  ENDERMITE:
+    attributes:
+      scale: 1.5
+    ai:
+      mode: AUTO
+  EVOKER:
+    ai:
+      mode: AUTO
+  FOX:
+    ai:
+      mode: AUTO
+  FROG:
+    ai:
+      mode: AUTO
+  GHAST:
+    ai:
+      mode: AUTO
+  HUSK:
+    ai:
+      mode: AUTO
+  IRON_GOLEM:
+    ai:
+      mode: AUTO
+  MAGMA_CUBE:
+    ai:
+      mode: AUTO
+  PARCHED:
+    ai:
+      mode: AUTO
+  PIGLIN:
+    ai:
+      mode: AUTO
+  PIGLIN_BRUTE:
+    ai:
+      mode: AUTO
+  PILLAGER:
+    ai:
+      mode: AUTO
+  POLAR_BEAR:
+    ai:
+      mode: AUTO
+  RAVAGER:
+    ai:
+      mode: AUTO
+  SHULKER:
+    ai:
+      mode: AUTO
+  SKELETON:
+    ai:
+      mode: AUTO
+  STRAY:
+    ai:
+      mode: AUTO
+  STRIDER:
+    ai:
+      mode: AUTO
+  VEX:
+    ai:
+      mode: AUTO
+  VINDICATOR:
+    ai:
+      mode: AUTO
+  WITCH:
+    ai:
+      mode: AUTO
+  WITHER_SKELETON:
+    ai:
+      mode: AUTO
+  ZOMBIE:
+    ai:
+      mode: AUTO
+  ZOMBIE_HORSE:
+    ai:
+      mode: AUTO
+  ZOMBIFIED_PIGLIN:
+    ai:
+      mode: AUTO
+  SILVERFISH:
+    attributes:
+      scale: 1.5
+    ai:
+      mode: AUTO

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.mczju</groupId>
+    <artifactId>InfernalClash</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    <name>InfernalClash</name>
+    <description>InfernalClash（代理人战争）— Paper 26.2 / MCZJUGameCore 子插件：1v1 实时卡牌策略对战</description>
+
+    <properties>
+        <java.version>25</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 与测试服 E:\MCpaper 实际运行版本一致（2026-10-14 实测 paper-26.2-133.jar） -->
+        <paper.version>26.2.build.133-stable</paper.version>
+        <!-- MCZJUGameCore：与测试服 plugins/MCZJUGameCore-1.1.2.jar 一致 -->
+        <mgc.version>1.1.2</mgc.version>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>papermc</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>${paper.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.mczju-ops</groupId>
+            <artifactId>MCZJUGameCore</artifactId>
+            <version>${mgc.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>InfernalClash-${project.version}</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>${java.version}</release>
+                    <encoding>UTF-8</encoding>
+                    <!-- JDK 25 下 plexus-compiler 进程内编译(javax.tools)会抛
+                         ConcurrentModificationException，须 fork 出进程 javac 编译。
+                         （经验来自 MCZJUGuess / 炒鸡本体 MCZJUInfernalMobs 的 pom.xml） -->
+                    <fork>true</fork>
+                    <compilerArgs>
+                        <arg>-Xlint:-removal</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>

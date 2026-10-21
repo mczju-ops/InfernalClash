@@ -1,0 +1,49 @@
+id: ice_mage
+type: SUMMON
+display-name: "<red>冰术师"
+flavor: "他带着弓，却从不射箭。"
+description:
+  - "<gray>召唤一只身穿铁锭纹样蓝皮革套装的流浪者，手持弓但<white>不射箭</white>。"
+  - "<gray>每 <white>2</white> 秒对目标及其周围 <white>1</white> 格内的敌人造成 <white>4</white> 点范围伤害，并施加<white>缓慢 II</white>。"
+icon: BLUE_ICE
+cost: 3
+cooldown-ticks: 400
+rarity: LEGENDARY
+
+summon:
+  group:
+    - entity: STRAY
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  block-ranged: true
+  equipment:
+    helmet: LEATHER_HELMET
+    chestplate: LEATHER_CHESTPLATE
+    leggings: LEATHER_LEGGINGS
+    boots: LEATHER_BOOTS
+    main-hand: BOW
+    color: BLUE
+    trim:
+      helmet: { material: IRON, pattern: DUNE }
+      chestplate: { material: IRON, pattern: VEX }
+      leggings: { material: IRON, pattern: COAST }
+  abilities:
+    - id: area_damage_periodically
+      trigger: PERIODIC
+      cooldown-ticks: 40
+      targets: ENEMIES
+      radius: 1
+      center: ATTACK_TARGET
+      search-radius: 8
+      include-self: false
+      fx:
+        particle: SNOWFLAKE
+      effects:
+        - type: DAMAGE
+          amount: 4
+        - type: POTION
+          effect: SLOWNESS
+          amplifier: 1
+          duration-ticks: 40

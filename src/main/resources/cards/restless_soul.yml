@@ -1,0 +1,37 @@
+id: restless_soul
+type: SUMMON
+display-name: "<red>不休之魂"
+flavor: "它死过一次，所以不怕再死一次。"
+description:
+  - "<gray>召唤一只手持铁剑、身穿紫水晶纹样黑皮革套装的骷髅。"
+  - "<gray>它死亡时会立刻<white>刷新本卡的冷却</white>。"
+icon: SOUL_LANTERN
+cost: 1
+cooldown-ticks: 600
+rarity: LEGENDARY
+
+summon:
+  group:
+    - entity: SKELETON
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  attributes:
+    health: 14.0
+  equipment:
+    helmet: LEATHER_HELMET
+    chestplate: LEATHER_CHESTPLATE
+    leggings: LEATHER_LEGGINGS
+    boots: LEATHER_BOOTS
+    main-hand: IRON_SWORD
+    color: BLACK
+    trim:
+      helmet: { material: AMETHYST, pattern: DUNE }
+      chestplate: { material: AMETHYST, pattern: VEX }
+      leggings: { material: AMETHYST, pattern: COAST }
+  abilities:
+    - id: refresh_card_cooldown
+      trigger: ON_DEATH
+      effects:
+        - type: REFRESH_COOLDOWN

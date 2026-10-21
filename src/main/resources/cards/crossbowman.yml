@@ -1,0 +1,27 @@
+id: crossbowman
+type: SUMMON
+display-name: "<green>劲弩手"
+flavor: "上弦的声音，就是倒计时。"
+description:
+  - "<gray>召唤一名手持弩的劫掠者。"
+  - "<gray>它不再射箭，而是每 <white>0.5</white> 秒打出一道<light_purple>穿透射线</light_purple>，"
+  - "<gray>对穿过的每个敌人造成 <white>2</white> 点伤害（<white>8</white> 格内）。"
+icon: CROSSBOW
+cost: 4
+cooldown-ticks: 400
+rarity: COMMON
+
+summon:
+  group:
+    - entity: PILLAGER
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  equipment:
+    main-hand: CROSSBOW
+  ray:
+    damage: 2  # 对每个贯穿的敌人 2 点
+    interval-ticks: 10  # 每 0.5 秒一根
+    particle: PORTAL  # 「紫色射线粒子」
+    range: 8

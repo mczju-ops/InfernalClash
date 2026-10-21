@@ -1,0 +1,23 @@
+id: tactical_cooldown
+type: SPELL
+display-name: "<green>战术冷却"
+flavor: "等一下，再快一点。"
+description:
+  - "<gray>在 <white>10</white> 秒内，你的所有卡牌冷却时间减少 <white>50%</white>。"
+icon: CLOCK
+cost: 2
+cooldown-ticks: 900
+rarity: COMMON
+
+spell:
+  targeting: NONE
+  shape:
+    type: SINGLE
+    origin: SELF
+  effects:
+    - type: COOLDOWN_REDUCTION
+      percent: 50  # 减少 50%
+      duration-ticks: 200  # 10 秒
+  fx:
+    particle: ENTITY_EFFECT
+    sound: block.beacon.power_select

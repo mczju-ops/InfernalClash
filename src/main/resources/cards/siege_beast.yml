@@ -1,0 +1,23 @@
+id: siege_beast
+type: SUMMON
+display-name: "<white>攻城兽"
+flavor: "它不在乎你是谁，只在乎谁最显眼。"
+description:
+  - "<gray>召唤一只生命 <white>60</white> 的北极熊。"
+  - "<gray>它优先扑向带<white>嘲讽</white>的单位。"
+icon: ANVIL
+cost: 5
+cooldown-ticks: 200
+rarity: BASIC
+
+summon:
+  group:
+    - entity: POLAR_BEAR
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  affected-by-building: true
+  attributes:
+    health: 60
+    movement-speed: 0.6

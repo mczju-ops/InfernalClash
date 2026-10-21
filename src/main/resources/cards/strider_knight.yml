@@ -1,0 +1,29 @@
+id: strider_knight
+type: SUMMON
+display-name: "<blue>炽足兽骑士"
+flavor: "岩浆之上，只有它还愿意冲锋。"
+description:
+  - "<gray>召唤一名骑乘<white>炽足兽</white>、手持矛的僵尸猪灵。"
+  - "<gray>炽足兽的移动速度为原版的 <white>400%</white>，并优先攻击<white>建筑</white>。"
+icon: WARPED_FUNGUS_ON_A_STICK
+cost: 4
+cooldown-ticks: 200
+rarity: RARE
+
+summon:
+  group:
+    - entity: STRIDER
+      count: 1
+      offset: { forward: 0, right: 0 }
+      attributes:
+        movement-speed: 4.0
+    - entity: ZOMBIFIED_PIGLIN
+      count: 1
+      offset: { forward: 0, right: 0 }
+      mount: STRIDER
+  placement: GROUND_OR_SELF
+  equipment:
+    groups: [ZOMBIFIED_PIGLIN]
+    main-hand: IRON_SPEAR
+  taunt: false
+  affected-by-building: true

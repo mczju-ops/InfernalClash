@@ -1,0 +1,23 @@
+id: healing
+type: SPELL
+display-name: "<green>治愈术"
+flavor: "伤口合上了，就像没发生过。"
+description:
+  - "<gray>为一名<white>友方召唤物</white>恢复<white>全部</white>生命。"
+  - "<gray>需要先用准星指着它；没有选中目标时不会释放，也不消耗费用与冷却。"
+icon: GOLDEN_APPLE
+cost: 2
+cooldown-ticks: 600
+rarity: COMMON
+
+spell:
+  targeting: ALLY_TARGET
+  shape:
+    type: SINGLE
+    origin: TARGET
+  effects:
+    - type: HEAL
+      full: true
+  fx:
+    particle: HAPPY_VILLAGER
+    sound: block.enchantment_table.use

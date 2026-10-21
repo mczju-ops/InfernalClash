@@ -1,0 +1,22 @@
+id: sword_buzz
+type: SUMMON
+display-name: "<white>利剑嗡嗡"
+flavor: "嗡嗡声从四面八方来。"
+description:
+  - "<gray>召唤两只飞行恼鬼。"
+  - "<gray>它们不会自行消失。"
+icon: BEE_SPAWN_EGG
+cost: 2
+cooldown-ticks: 200
+rarity: BASIC
+
+summon:
+  group:
+    - entity: VEX
+      count: 2
+      offset: { forward: 0, right: 0 }
+      spread: 1.0
+      attributes:
+        health: 10
+  placement: GROUND_OR_SELF
+  taunt: false

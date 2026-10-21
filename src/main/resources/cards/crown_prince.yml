@@ -1,0 +1,31 @@
+id: crown_prince
+type: SUMMON
+display-name: "<blue>前储君"
+flavor: "王座没了，马还记得回家的路。"
+description:
+  - "<gray>召唤一名骑乘<white>僵尸马</white>、手持铁矛的僵尸，头戴金头盔，僵尸马披金色马铠。"
+  - "<gray>未攻击时，坐骑每 <white>2</white> 秒获得 <white>20%</white> 速度加成（上限 <white>100%</white>）；攻击到敌人（含信标与防御塔）后清除该加成。"
+icon: GOLDEN_HELMET
+cost: 5
+cooldown-ticks: 400
+rarity: RARE
+
+summon:
+  group:
+    - entity: ZOMBIE_HORSE
+      count: 1
+      offset: { forward: 0, right: 0 }
+    - entity: ZOMBIE
+      count: 1
+      offset: { forward: 0, right: 0 }
+      mount: ZOMBIE_HORSE
+  placement: GROUND_OR_SELF
+  equipment:
+    groups: [ZOMBIE]
+    helmet: GOLDEN_HELMET
+    chestplate: GOLDEN_CHESTPLATE
+    leggings: GOLDEN_LEGGINGS
+    boots: GOLDEN_BOOTS
+    main-hand: IRON_SPEAR
+  taunt: false
+  speed-ramp: true

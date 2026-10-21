@@ -1,0 +1,20 @@
+id: spirit_fox_assassin
+type: SUMMON
+display-name: "<white>灵狐刺客"
+flavor: "剑叼在嘴里，就像叼着一根骨头。"
+description:
+  - "<gray>召唤一只狐狸刺客，嘴里叼着钻石剑。"
+icon: DIAMOND_SWORD
+cost: 1
+cooldown-ticks: 200
+rarity: BASIC
+
+summon:
+  group:
+    - entity: FOX
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  equipment:
+    main-hand: DIAMOND_SWORD

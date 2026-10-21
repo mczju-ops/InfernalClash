@@ -1,0 +1,25 @@
+id: demolition
+type: SPELL
+display-name: "<blue>定点爆破"
+flavor: "爆炸只落在你指定的那一格。"
+description:
+  - "<gray>以自身或准星所指的一格为中心，半径 <white>2</white> 格。"
+  - "<gray>范围内的敌人各受 <white>40</white> 点伤害，并被从中心向外击退。"
+icon: TNT
+cost: 6
+cooldown-ticks: 400
+rarity: RARE
+
+spell:
+  targeting: GROUND
+  shape:
+    type: CIRCLE
+    radius: 2
+    origin: IMPACT
+  effects:
+    - type: DAMAGE
+      amount: 40
+    - type: KNOCKBACK
+  fx:
+    particle: EXPLOSION_EMITTER
+    sound: entity.generic.explode

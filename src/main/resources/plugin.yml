@@ -1,0 +1,22 @@
+name: InfernalClash
+version: '${project.version}'
+main: io.mczju.infernalclash.InfernalClashPlugin
+api-version: '26.2'
+description: 代理人战争 - 实时卡牌策略对战小游戏（MCZJUGameCore 子插件）
+author: _YamatoMaya_
+depend:
+  - MCZJUGameCore
+
+commands:
+  incl:
+    description: 代理人战争 主指令
+    usage: "/incl <shop|cards|codex|arena|bot|info|debug>"
+    aliases: [infernalclash]
+
+permissions:
+  infernalclash.play:
+    description: 玩家指令（信息查询）
+    default: true
+  infernalclash.admin:
+    description: 管理员调试指令（debug 子命令）
+    default: op

@@ -1,0 +1,27 @@
+id: coal_guard
+type: SUMMON
+display-name: "<light_purple>煤矿守卫"
+flavor: "从矿道里爬出来的老兵，身上还带着抗性。"
+description:
+  - "<gray>召唤一只凋零骷髅。"
+  - "<gray>它登场时立即获得 <white>10</white> 秒<white>抗性提升 V</white>。"
+icon: COAL_BLOCK
+cost: 3
+cooldown-ticks: 400
+rarity: EPIC
+
+summon:
+  group:
+    - entity: WITHER_SKELETON
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  abilities:
+    - id: resistance_on_summon
+      trigger: ON_SUMMON
+      effects:
+        - type: POTION
+          effect: RESISTANCE
+          amplifier: 4
+          duration-ticks: 200

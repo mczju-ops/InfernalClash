@@ -1,0 +1,25 @@
+id: fireball
+type: SPELL
+display-name: "<white>火球术"
+flavor: "先看到火，再听到响。"
+description:
+  - "<gray>以自身或准星所指的一格为中心，半径 <white>3</white> 格。"
+  - "<gray>范围内的敌人各受 <white>24</white> 点伤害，并被从选点向外击退。"
+icon: FIRE_CHARGE
+cost: 4
+cooldown-ticks: 400
+rarity: BASIC
+
+spell:
+  targeting: GROUND
+  shape:
+    type: CIRCLE
+    radius: 3
+    origin: IMPACT
+  effects:
+    - type: DAMAGE
+      amount: 24
+    - type: KNOCKBACK
+  fx:
+    particle: FLAME
+    sound: entity.blaze.shoot

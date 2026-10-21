@@ -1,0 +1,24 @@
+id: speed_potion
+type: SPELL
+display-name: "<white>速度药水"
+flavor: "喝下去，脚下就轻了。"
+description:
+  - "<gray>自身在 <white>20</white> 秒内获得<white>速度 V</white>。"
+icon: RABBIT_FOOT
+cost: 1
+cooldown-ticks: 1200
+rarity: BASIC
+
+spell:
+  targeting: SELF
+  shape:
+    type: SINGLE
+    origin: SELF
+  effects:
+    - type: POTION
+      effect: SPEED
+      amplifier: 4
+      duration-ticks: 400
+  fx:
+    particle: ENTITY_EFFECT
+    sound: entity.breeze.wind_burst

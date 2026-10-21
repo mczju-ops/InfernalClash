@@ -1,0 +1,30 @@
+id: grudge_bomber
+type: SUMMON
+display-name: "<blue>怨恨轰炸机"
+flavor: "它飞得很高，只为了从正上方看你一眼。"
+description:
+  - "<gray>召唤一只 <white>22</white> 血的恶魂。"
+  - "<gray>它不能按原版方式吐火球，而是飞到目标正上方，然后垂直向下发射火球。"
+icon: GUNPOWDER
+cost: 5
+cooldown-ticks: 600
+rarity: RARE
+
+summon:
+  group:
+    - entity: GHAST
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  affected-by-building: true
+  bomber: true
+  attributes:
+    health: 22.0
+  abilities:
+    - id: deathrattle_cast_spell
+      trigger: ON_DEATH
+      effects:
+        - type: CAST_SPELL
+          spell: demolition
+          at: IMPACT

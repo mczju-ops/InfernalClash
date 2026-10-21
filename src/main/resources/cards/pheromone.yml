@@ -1,0 +1,32 @@
+id: pheromone
+type: SPELL
+display-name: "<red>信息素"
+flavor: "空气里飘着一种味道，虫子们都知道该往哪爬。"
+description:
+  - "<gray>以自身或准星所指的一格为中心，半径 <white>5</white> 格，持续 <white>20</white> 秒。"
+  - "<gray>期间每秒在范围内<white>随机选一格</white>，召唤一只 <white>2</white> 点血量的蠹虫。"
+icon: SPIDER_EYE
+cost: 5
+cooldown-ticks: 600
+rarity: LEGENDARY
+
+spell:
+  targeting: GROUND
+  shape:
+    type: CIRCLE
+    radius: 5
+    origin: IMPACT
+  effects:
+    - type: SUMMON_PERIODICALLY
+      group:
+        entity: SILVERFISH
+        name: "蠹虫"
+        attributes:
+          health: 2
+      count: 1
+      interval-ticks: 20  # 每 1 秒一次
+      duration-ticks: 400
+      radius: 5
+  fx:
+    particle: CRIT
+    sound: block.stone.break

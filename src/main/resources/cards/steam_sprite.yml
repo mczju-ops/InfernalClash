@@ -1,0 +1,38 @@
+id: steam_sprite
+type: SUMMON
+display-name: "<red>蒸汽精灵"
+flavor: "它从不打人，只是让身边的人活得更久。"
+description:
+  - "<gray>召唤一只<white>不攻击</white>、只索敌己方目标的铜傀儡（已涂蜡防氧化）。"
+  - "<gray>每 <white>3</white> 秒使周围 <white>3</white> 格内的友方单位恢复 <white>8</white> 点生命，并获得 <white>3</white> 秒<white>抗性提升 I</white>。"
+icon: COPPER_INGOT
+cost: 3
+cooldown-ticks: 400
+rarity: LEGENDARY
+
+summon:
+  group:
+    - entity: COPPER_GOLEM
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  waxed: true
+  oxidized: true
+  abilities:
+    - id: heal_allies_periodically
+      trigger: PERIODIC
+      cooldown-ticks: 60
+      targets: ALLIES
+      radius: 3
+      include-self: true
+      fx:
+        particle: TOTEM_OF_UNDYING
+        sound: block.beacon.activate
+      effects:
+        - type: HEAL
+          amount: 8
+        - type: POTION
+          effect: RESISTANCE
+          amplifier: 0
+          duration-ticks: 60

@@ -1,0 +1,30 @@
+config-version: 1
+
+rarities:
+  BASIC:     { color: "<white>",  pack-weight: 0,  gold-chance: 0.0 }
+  COMMON:    { color: "<green>",  pack-weight: 50, gold-chance: 0.05 }
+  RARE:      { color: "<blue>",   pack-weight: 30, gold-chance: 0.05 }
+  EPIC:      { color: "<purple>", pack-weight: 15, gold-chance: 0.05 }
+  LEGENDARY: { color: "<red>",    pack-weight: 5,  gold-chance: 0.05 }
+
+# ---------------- 卡包----------------
+pack:
+  # ：购买一次 = 随机抽取 5 张卡牌
+  cards-per-pack: 5
+
+  price:
+    1: 100  # 100 金币 = 1 包
+    10: 1000
+
+exchange:
+  COMMON:    { duplicate-powder: 10,  duplicate-gold-powder: 40,   unlock-price: 40 }
+  RARE:      { duplicate-powder: 40,  duplicate-gold-powder: 160,  unlock-price: 100 }
+  EPIC:      { duplicate-powder: 100, duplicate-gold-powder: 400,  unlock-price: 400 }
+  LEGENDARY: { duplicate-powder: 400, duplicate-gold-powder: 1600, unlock-price: 1600 }
+
+gold:
+  win-reward: 200  # 真人局 · 胜
+  lose-reward: 100  # 真人局 · 败
+  bot-win-reward: 100  # 人机局 · 胜
+  bot-lose-reward: 0  # 人机局 · 败
+  first-game-bonus: 1000  # 玩家第一次完成对局的额外奖励

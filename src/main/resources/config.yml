@@ -1,0 +1,256 @@
+# 配置结构版本号（将来做破坏性迁移时靠它判断）
+config-version: 1
+
+meta:
+  # 大厅里显示的游戏名（MiniMessage 文本）
+  name: "<gold>代理人战争"
+  icon: TOTEM_OF_UNDYING
+  # 作者署名（显示在大厅条目里）
+  author: "_YamatoMaya_"
+  # 描述行，一行一条（MiniMessage 文本）
+  description:
+    - "<gray>实时卡牌策略对战小游戏"
+
+game:
+  # 开局所需的最少真人玩家数。
+  # 为什么这里也要写：MGC 自己的 min-players 同样只数真人，
+  # 而我们的等待策略用同一个数做开局门槛（见 StartGate，纯函数 + 单测）。
+  min-players: 2
+  max-players: 2
+
+mgc:
+  register-game: true
+
+  purge-legacy-on-start: true
+
+phases:
+  # 准备阶段
+  preparing-ticks: 1200
+  # 战斗阶段
+  battle-ticks: 3600
+  # 从战斗开始第 2400 tick（= 2 分钟）起进入双倍经验
+  # ⚠️ 必须 <= battle-ticks，否则双倍永不生效（加载期会拒绝启动）
+  double-xp-after-ticks: 2400
+  # 加时阶段
+  overtime-ticks: 1200
+  xp-at-battle-start: 5.0
+  # 战斗期升 1 级所需 tick（= 40 tick = 2 秒）
+  xp-ticks-per-level: 40
+  # 双倍期升 1 级所需 tick（= 20 tick = 1 秒）
+  xp-ticks-per-level-double: 20
+  # 等级上限；同时也是卡牌费用的上限
+  max-level: 10.0
+
+objectives:
+  beacon:
+    display-block: BEACON  # 信标外观
+    health: 320
+    taunt: true
+    deals-damage: false
+    beam-colors: [RED, BLUE]
+  tower:
+    display-block: WAXED_COPPER_BULB # 防御塔外观
+    display-block-state: { lit: true }
+    health: 240
+    taunt: true
+    disable-vanilla-attack: true
+    beam-damage: 2
+    beam-interval-ticks: 10
+    beam-particle: END_ROD
+    range-shape: SQUARE_25
+    half-extent-cells: 12
+
+arena:
+  default: ""
+
+combat:
+  target-refresh-ticks: 10
+
+training:
+  #   · name  = 侧边栏与日志里显示的名字
+  #   · deck  = 这一套的 8 张卡
+  #   卡组里可以写「random」占位符：进入对战时换成任意一张随机合法卡牌，
+  #   与卡组里写死的卡、以及彼此之间都不重复（可以写多个）。
+  #   人机不能带的卡：速度药水 / 战术冷却 / 回响（写进去会拒绝启动）。
+  #   法术卡必须在下面的 spell-rules 里有一条规则，否则视为「人机不可用卡」。
+  #   ★ 2026-10-21 新增占位符 `steal`：进入战斗后（玩家确认卡组之后）按**同位置**
+  #     替换成玩家那一格的卡。8 个 steal = 整套复刻玩家卡组。
+  #     玩家那张卡人机用不了 / 与前面格子重复 / 玩家没确认卡组 ⇒ 该格兜底成随机合法卡（控制台点名）。
+  bots:
+
+    - name: 训练师安度因
+      deck:
+        - steal
+        - steal
+        - steal
+        - steal
+        - steal
+        - steal
+        - steal
+        - steal
+
+    - name: 训练师可丽希亚
+      deck:
+        - blaze_furnace
+        - crown_prince
+        - piglin_squad
+        - fireball
+        - necromancer
+        - axolotl
+        - grudge_bomber
+        - healing
+
+    - name: 训练师乌鲁鲁
+      deck:
+        - double_team
+        - allay
+        - necromancer
+        - sea_king
+        - frog_parasite
+        - ice_shard
+        - ravager_fortress
+        - coal_guard
+
+    - name: 训练师卡德加
+      deck:
+        - random
+        - random
+        - random
+        - random
+        - random
+        - random
+        - random
+        - iron_colossus
+
+    - name: 训练师观者
+      deck:
+        - ironclad_warrior
+        - precision_hunter
+        - crown_prince
+        - necromancer
+        - steam_sprite
+        - random
+        - random
+        - random
+
+    - name: 训练师流浪商人
+      deck:
+        - piglin_squad
+        - swamp_guerrillas
+        - frog_parasite
+        - fireball
+        - iron_colossus
+        - bloodlust
+        - healing
+        - ice_shard
+
+    - name: 训练师雾子
+      deck:
+        - swamp_guerrillas
+        - axolotl
+        - fox_guide
+        - sword_buzz
+        - endermite_swarm
+        - bloodlust
+        - spirit_fox_assassin
+        - arrow_rain
+
+    - name: 训练师咔咔
+      deck:
+        - siege_beast
+        - strider_knight
+        - axolotl
+        - frog_parasite
+        - grudge_bomber
+        - fireball
+        - demolition
+        - swamp_guerrillas
+
+    - name: 训练师丁真
+      deck:
+        - sentry
+        - spirit_fox_assassin
+        - axolotl
+        - siege_beast
+        - ice_shard
+        - frog_parasite
+        - lava_sprite
+        - pheromone
+
+    - name: 训练师管理员
+      deck:
+        - frog_parasite
+        - blaze_furnace
+        - blaze_guard
+        - gale_push
+        - swarm_shaman
+        - sentry
+        - evoker
+        - bloodlust
+    
+    - name: 训练师奇达
+      deck:
+        - strider_knight
+        - lava_sprite
+        - restless_soul
+        - healing
+        - spirit_fox_assassin
+        - swamp_guerrillas
+        - sword_buzz
+        - terrorist
+
+    # - name: 训练人机          # ← 想加更多套人机，照这个样子复制一段
+    #   deck:
+    #     - random
+    #     - random
+    #     - swamp_guerrillas
+    #     - spirit_fox_assassin
+    #     - fireball
+    #     - healing
+    #     - sword_buzz
+    #     - sentry
+
+  # ★★ 每张法术卡的「人机怎么放」（全局：一张卡一条，所有拿到它的人机都这么放）。
+  #   四个取值：
+  #     NEAREST_ENEMY       = 以「离人机自己的信标最近的敌人」为中心释放（敌人含召唤物/防御塔/信标）
+  #     RANDOM_ALLY_CENTER  = 以一名随机友方召唤物（不含防御塔/信标）为中心释放
+  #     RANDOM_ALLY_FACING  = 以那名友方召唤物的「位置 + 朝向」释放（狂风推进 / 烈焰扇击这类方向性法术）
+  #     RANDOM_ALLY_TARGET  = 对那名友方召唤物单体使用（治疗类法术，只能配这一条）
+  #  没写在这里的法术卡 = 人机不会用（也不会被「随机」抽到）；写召唤卡会拒绝启动。
+  spell-rules:
+    arrow_rain: NEAREST_ENEMY
+    fireball: NEAREST_ENEMY
+    ice_shard: NEAREST_ENEMY
+    storm: NEAREST_ENEMY
+    demolition: NEAREST_ENEMY
+    flame_fan: RANDOM_ALLY_FACING
+    gale_push: RANDOM_ALLY_FACING
+    bloodlust: RANDOM_ALLY_CENTER
+    pheromone: RANDOM_ALLY_CENTER
+    grave_digger: RANDOM_ALLY_CENTER
+    fox_guide: RANDOM_ALLY_CENTER
+    healing: RANDOM_ALLY_TARGET
+
+  # ★★ 建筑类召唤牌的落点（2026-10-21 裁定；权威说明 docs/32）。**只对人机生效**。
+  #   三个取值（选哪座塔 + 沿「前向」偏移几格）：
+  #     BACK   = 后置：放在**血量低**那座塔的**后方 4 格**
+  #     CENTER = 中置：放在**血量低**那座塔的**正前方 4 格**
+  #     FRONT  = 前置：放在**血量高**那座塔的**前方 10 格**（逼近桥头）★ 目前没有卡用它
+  #   ★ 两座塔血量**相等**时一律放**右侧**；已被拆的塔（血量 0）照样可以被选中。
+  #   ★ **没写在这里的卡 = 走普通召唤规则（放自己信标）**，例如「不朽旗手」。
+  #   ★ 若写了一张**不是建筑**的卡（cards/*.yml 里没有 summon.building: true）⇒ 拒绝启动并点名。
+  building-placements:
+    frog_parasite: BACK      # 异蛙寄生体
+    blaze_furnace: BACK      # 烈焰熔炉
+    allay: BACK              # 悦灵
+    blaze_guard: CENTER      # 烈焰守卫
+    sentry: CENTER           # 哨位
+    # immortal_banner: —     # 不朽旗手：用户明说不配置 ⇒ 走普通规则
+
+  # ★★ 「前 / 后」是哪个方向（四方位，取值 = card/Facing 的四个名字）。
+  #   ★ 必须按竞技场实际朝向来配：某一方的「前」= 朝敌方（中线）的方向。
+  #   ★ 出厂值 = 现场竞技场 default 的方向（红在 +X 深处 ⇒ 红前 = −X = WEST；蓝相反）。
+  #   ★ 整段不写 = 就用这两个默认值；写了就必须**两侧都写**（只写一侧会拒绝启动）。
+  building-front:
+    red: WEST
+    blue: EAST

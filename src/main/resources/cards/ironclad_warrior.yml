@@ -1,0 +1,29 @@
+id: ironclad_warrior
+type: SUMMON
+display-name: "<white>铁甲战士"
+flavor: "铁甲在身，一往无前。"
+description:
+  - "<gray>召唤一名身穿铁甲、手持铁剑的僵尸。"
+  - "<gray>生命 <white>40</white>，体型 <white>×1.2</white>，抗击退。"
+icon: IRON_CHESTPLATE
+cost: 3
+cooldown-ticks: 200
+rarity: BASIC
+
+summon:
+  group:
+    - entity: ZOMBIE
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  attributes:
+    health: 40
+    scale: 1.2
+    knockback-resistance: 0.8
+  equipment:
+    helmet: IRON_HELMET
+    chestplate: IRON_CHESTPLATE
+    leggings: COPPER_LEGGINGS
+    boots: IRON_BOOTS
+    main-hand: IRON_SWORD

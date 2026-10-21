@@ -1,0 +1,20 @@
+id: iron_colossus
+type: SUMMON
+display-name: "<red>钢铁巨像"
+flavor: "它不会喊口号，它只会挡在前面。"
+description:
+  - "<gray>召唤一只铁傀儡。"
+icon: IRON_BLOCK
+cost: 7
+cooldown-ticks: 400
+rarity: LEGENDARY
+
+summon:
+  group:
+    - entity: IRON_GOLEM
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  attributes:
+    health: 160.0

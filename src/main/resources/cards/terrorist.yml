@@ -1,0 +1,30 @@
+id: terrorist
+type: SUMMON
+display-name: "<white>恐怖分子"
+flavor: "别靠太近——为你自己好。"
+description:
+  - "<gray>召唤一只生命 <white>10</white> 的苦力怕。"
+  - "<gray>它登场时永久获得<white>速度 II</white>。"
+  - "<red>爆炸不分敌我。"
+icon: FLINT_AND_STEEL
+cost: 2
+cooldown-ticks: 400
+rarity: BASIC
+
+summon:
+  group:
+    - entity: CREEPER
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  attributes:
+    health: 10
+  abilities:
+    - id: speed_on_summon
+      trigger: ON_SUMMON
+      effects:
+        - type: POTION
+          effect: SPEED
+          amplifier: 1
+          duration-ticks: 100000

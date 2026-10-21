@@ -1,0 +1,23 @@
+id: echo
+type: SPELL
+display-name: "<red>回响"
+flavor: "你打出去的东西，会在下一格里重播一次。"
+description:
+  - "<gray>以准星所指的一格为中心，把本局<white>你上一张成功打出的牌</white>再打一次。"
+  - "<gray>只付回响自己的 <white>5</white> 费与 <white>30</white> 秒冷却；被复读的牌<white>不再</white>付它的费用、也不进它的冷却。"
+  - "<gray>它<white>不能当第一张牌打出</white>：本局还没出过牌时无法施放（不消耗费用与冷却）。"
+icon: SCULK_SENSOR
+cost: 5
+cooldown-ticks: 600
+rarity: LEGENDARY
+
+spell:
+  targeting: GROUND
+  shape:
+    type: SINGLE
+    origin: IMPACT
+  effects:
+    - type: REPLAY_LAST_CARD
+  fx:
+    particle: REVERSE_PORTAL
+    sound: entity.enderman.teleport

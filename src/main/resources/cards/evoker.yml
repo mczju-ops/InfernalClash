@@ -1,0 +1,36 @@
+id: evoker
+type: SUMMON
+display-name: "<red>唤魔者"
+flavor: "他召唤的恼鬼，只听他的。"
+description:
+  - "<gray>召唤一只唤魔者。"
+  - "<gray>它召唤出的恼鬼会被接管为你的单位；尖牙是范围伤害且<white>不分阵营</white>。"
+icon: TOTEM_OF_UNDYING
+cost: 4
+cooldown-ticks: 400
+rarity: LEGENDARY
+
+summon:
+  group:
+    - entity: EVOKER
+      count: 1
+      offset: { forward: 0, right: 0 }
+      attributes:
+        movement-speed: 0.5
+  placement: GROUND_OR_SELF
+  taunt: false
+  fang-attack: true
+  stop-when-target-within: 8
+  abilities:
+    - id: fang_barrage
+      trigger: PERIODIC
+      cooldown-ticks: 60  # 每 3 秒
+      center: ATTACK_TARGET
+      targets: ENEMIES
+      search-radius: 8
+      radius: 0  # 只有目标所在的那一格
+      include-self: false
+      effects:
+        - type: STUN
+          duration-ticks: 20
+        - type: SPAWN_FANGS  # 再在目标脚下长一根原版尖牙

@@ -1,0 +1,26 @@
+id: ice_shard
+type: SPELL
+display-name: "<green>冰晶坠"
+flavor: "冷得连想法都慢下来。"
+description:
+  - "<gray>以自身或准星所指的一格为中心，半径 <white>3</white> 格。"
+  - "<gray>范围内的敌人各受 <white>8</white> 点伤害，并被<white>眩晕 2 秒</white>。"
+icon: PRISMARINE_SHARD
+cost: 2
+cooldown-ticks: 200
+rarity: COMMON
+
+spell:
+  targeting: GROUND
+  shape:
+    type: CIRCLE
+    radius: 3
+    origin: IMPACT
+  effects:
+    - type: DAMAGE
+      amount: 8
+    - type: STUN
+      duration-ticks: 40
+  fx:
+    particle: SNOWFLAKE
+    sound: block.glass.break

@@ -1,0 +1,27 @@
+id: axolotl
+type: SUMMON
+display-name: "<blue>美西螈"
+flavor: "它以为自己死了，然后又游了回来。"
+description:
+  - "<gray>召唤一只美西螈。"
+  - "<gray>它第一次被击倒时会假死并<white>满血</white>复活<white>一次</white>（上限 <white>1</white> 次）。"
+icon: AXOLOTL_BUCKET
+cost: 2
+cooldown-ticks: 200
+rarity: RARE
+
+summon:
+  group:
+    - entity: AXOLOTL
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  affected-by-building: true
+  attributes:
+    health: 20
+  abilities:
+    - id: revive_once
+      trigger: ON_DEATH
+      effects:
+        - type: REVIVE

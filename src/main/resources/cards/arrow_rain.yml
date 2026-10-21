@@ -1,0 +1,24 @@
+id: arrow_rain
+type: SPELL
+display-name: "<white>万箭齐发"
+flavor: "天上没有箭，但地上的人会以为有。"
+description:
+  - "<gray>以自身或准星所指的一格为中心，半径 <white>6</white> 格。"
+  - "<gray>范围内的敌人各受 <white>10</white> 点伤害（不召唤真箭）。"
+icon: ARROW
+cost: 3
+cooldown-ticks: 200
+rarity: BASIC
+
+spell:
+  targeting: GROUND
+  shape:
+    type: CIRCLE
+    radius: 6
+    origin: IMPACT
+  effects:
+    - type: DAMAGE
+      amount: 10
+  fx:
+    particle: ENCHANTED_HIT
+    sound: entity.arrow.hit

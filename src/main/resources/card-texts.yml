@@ -90,7 +90,7 @@ cards:
     flavor: "尸壳和焦骸天天许愿它们的骆驼变成骆驼娘，现在愿望成真了。"
     description:
       - "<gray>生成一只手持铁剑、身穿铁套的尸壳，和两只焦骸。"
-      - "<gray>焦骸会用<white>穿透射线</white>远程攻击。"
+      - "<gray>焦骸会用<white>穿透射线</white>远程攻击（每 <white>1.8</white> 秒 <white>10</white> 点）。"
 
   # <light_purple>双打组合｜SUMMON｜EPIC｜6 费｜200 tick
   double_team:
@@ -278,7 +278,7 @@ cards:
     flavor: "转来转去像个小丑。"
     description:
       - "<gray>召唤一名手持长弓的骷髅，它<white>不再射箭</white>。"
-      - "<gray>每 <white>0.5</white> 秒打出一道<white>穿透射线</white>，对穿过的每个敌人造成 <white>2</white> 点伤害（<white>8</white> 格内）。"
+      - "<gray>每 <white>1.8</white> 秒打出一道<white>穿透射线</white>，对穿过的每个敌人造成 <white>20</white> 点伤害。"
 
   # <light_purple>劫掠堡垒｜SUMMON｜EPIC｜8 费｜800 tick
   ravager_fortress:
@@ -373,8 +373,8 @@ cards:
     description:
       - "<gray>召唤一只焦骸。"
       - "<gray>每 <white>2</white> 秒在自身周围召唤 <white>1</white> 只蠹虫。"
-      - "<gray>它手持长弓却<white>不再射箭</white>：每 <white>0.5</white> 秒打出一道<white>穿透射线</white>，"
-      - "<gray>对穿过的每个敌人造成 <white>2</white> 点伤害（<white>8</white> 格内）。"
+      - "<gray>它手持长弓却<white>不再射箭</white>：每 <white>1.8</white> 秒打出一道<white>穿透射线</white>，"
+      - "<gray>对穿过的每个敌人造成 <white>10</white> 点伤害。"
 
   # <white>利剑嗡嗡｜SUMMON｜BASIC｜2 费｜200 tick
   sword_buzz:

@@ -4,7 +4,7 @@ display-name: "<white>精密猎手"
 flavor: "每一次呼吸都算好了提前量。"
 description:
   - "<gray>召唤一名身穿绿色皮革套装的骷髅，它手持长弓但<white>不再射箭</white>。"
-  - "<gray>每 <white>0.5</white> 秒打出一道<white>穿透射线</white>，对穿过的每个敌人造成 <white>2</white> 点伤害（<white>8</white> 格内）。"
+  - "<gray>每 <white>1.8</white> 秒打出一道<white>穿透射线</white>，对穿过的每个敌人造成 <white>20</white> 点伤害。"
 icon: SPECTRAL_ARROW
 cost: 2
 cooldown-ticks: 200
@@ -12,9 +12,12 @@ rarity: BASIC
 
 # ★ 1.1.0 第 2 条需求（用户逐字）：「所有的持弓骷髅单位全部转化为『劲弩手』类似的远程单位，
 #   不会射出箭矢，而是射出粒子射线造成伤害。且需要能够索敌到敌方的空中单位」
-#   ⇒ 精密猎手 = 骷髅（持弓）⇒ 加 `summon.ray`（与劲弩手同参数：2 点 / 10 tick / 8 格）。
+#   ★★ 用户 2026-10-26 追加裁定（逐字）：「**不能全部照抄劲弩手射线，需要按照原本带附魔的单位的
+#   攻击数值设计这个穿透射线的数值。静默猎手的力量V就对应每1.8秒造成20点伤害；
+#   两种焦骸就做成1.8秒造成10点伤害**」
+#   ⇒ 精密猎手（原本 力量 V 弓）＝ 每 **1.8 秒（36 tick）20 点**。
 #   ★ 弓保留（外观还是"持弓骷髅"），但箭不再生成（RangedAttackInterceptor 按同一份 ray 拦掉）；
-#     原来的「力量 V」附魔随箭一起作废 ⇒ 删掉（不给玩家一个"看起来更强"的假象）。
+#     原来的「力量 V」附魔随箭一起作废 ⇒ 删掉（数值已经折算进射线里）。
 summon:
   group:
     - entity: SKELETON
@@ -31,7 +34,7 @@ summon:
     boots: LEATHER_BOOTS
     color: GREEN
   ray:
-    damage: 2
-    interval-ticks: 10
+    damage: 20        # 力量 V 弓的等效伤害
+    interval-ticks: 36  # 1.8 秒
     particle: PORTAL
     range: 8

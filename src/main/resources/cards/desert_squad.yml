@@ -4,7 +4,7 @@ display-name: "<blue>沙漠小队"
 flavor: "沙暴里走出来的，从不单打独斗。"
 description:
   - "<gray><white>一只尸壳</white>在前、<white>两只焦骸</white>在后。"
-  - "<gray>尸壳手持铁剑、身穿铁套（铜护腿）；焦骸是骷髅类，会用射线远程攻击。"
+  - "<gray>尸壳手持铁剑、身穿铁套（铜护腿）；焦骸是骷髅类，会用穿透射线远程攻击（每 <white>1.8</white> 秒 <white>10</white> 点）。"
 icon: SANDSTONE
 cost: 5
 cooldown-ticks: 400
@@ -37,7 +37,9 @@ summon:
     main-hand: IRON_SWORD
   ray:
     groups: [PARCHED]
-    damage: 2
-    interval-ticks: 10
+    # ★★ 用户 2026-10-26 追加裁定：「**两种焦骸就做成 1.8 秒造成 10 点伤害**」
+    #   ⇒ 焦骸（原本是带附魔的弓）＝ 每 36 tick（1.8 秒）10 点穿透射线。
+    damage: 10
+    interval-ticks: 36
     particle: PORTAL
     range: 8

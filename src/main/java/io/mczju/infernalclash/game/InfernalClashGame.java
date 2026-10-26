@@ -1183,7 +1183,8 @@ public final class InfernalClashGame extends AbstractGame {
      */
     private MatchHooks playerBuffs(InfernalClashPlugin plugin, String matchId,
                                    Map<Side, UUID> sideAssignments) {
-        return new MatchPlayerBuffs(plugin, matchId, sideAssignments);
+        return new MatchPlayerBuffs(plugin, matchId, sideAssignments,
+                plugin.playerStateRestore());
     }
 
     /**

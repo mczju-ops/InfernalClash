@@ -57,19 +57,43 @@ package io.mczju.infernalclash.policy;
 public final class PlayerTargetBan {
 
     /**
-     * 是否启用「玩家对怪物不可见」。
+     * 出厂默认值：启用「玩家对怪物不可见」。
      *
-     * <p>★ <b>唯一开关</b>：{@code false} ⇒ {@code MatchPlayerBuffs} 完全不碰
-     * {@code setInvulnerable}（对局内玩家恢复到"能被怪看见"的旧行为）。
+     * <p>★★ 2026-10-26 起**不再是硬编码常量** —— 用户逐字：
+     * 「顺带：`PlayerTargetBan.ENABLED` 现在是硬编码常量，建议提成 `config.yml` 开关，
+     * 方便切换 PvE 场景。」⇒ 现在由 {@code config.yml} 的
+     * {@code combat.player-target-ban} 决定（{@link #configure(boolean)}）。
+     *
+     * <p>★ 关掉之后：{@code MatchPlayerBuffs} **完全不碰** {@code setInvulnerable}
+     * （对局内玩家恢复到"能被怪看见"的旧行为，适合 PvE 场景）。
      */
-    public static final boolean ENABLED = true;
+    public static final boolean DEFAULT_ENABLED = true;
+
+    /**
+     * 运行期开关（由 {@code InfernalClashPlugin} 在 {@code loadConfigs()} 里按配置写入）。
+     *
+     * <p>★ 为什么是 {@code volatile} 而不是构造参数：判据被三个调用点读
+     * （{@code MatchPlayerBuffs} 的施加与还原、日志摘要），而它们拿不到配置对象。
+     * ★ 为什么允许改：这是**纯策略**，不持有任何状态；改它只影响"要不要设无敌"。
+     */
+    private static volatile boolean enabled = DEFAULT_ENABLED;
 
     private PlayerTargetBan() {
     }
 
-    /** 本局要不要把玩家设成无敌（见 {@link #ENABLED}）。 */
+    /** 按配置设置开关（{@code config.yml} → {@code combat.player-target-ban}）。 */
+    public static void configure(boolean value) {
+        enabled = value;
+    }
+
+    /** 复位到出厂值（只给测试用 —— 静态状态不许在测试之间互相污染）。 */
+    public static void resetToDefault() {
+        enabled = DEFAULT_ENABLED;
+    }
+
+    /** 本局要不要把玩家设成无敌（见 {@link #DEFAULT_ENABLED} 与 {@link #configure(boolean)}）。 */
     public static boolean isEnabled() {
-        return ENABLED;
+        return enabled;
     }
 
     /**
@@ -80,7 +104,7 @@ public final class PlayerTargetBan {
      * @return {@code true} = 该写一次 {@code setInvulnerable(true)}
      */
     public static boolean shouldForceInvulnerable(boolean alreadyInvulnerable) {
-        return ENABLED && !alreadyInvulnerable;
+        return enabled && !alreadyInvulnerable;
     }
 
     /**
@@ -96,7 +120,7 @@ public final class PlayerTargetBan {
      * @param nowInvulnerable       他此刻是不是无敌
      */
     public static boolean shouldRestore(boolean wasInvulnerableBefore, boolean nowInvulnerable) {
-        if (!ENABLED) {
+        if (!enabled) {
             return false;
         }
         return !wasInvulnerableBefore && nowInvulnerable;
@@ -104,10 +128,10 @@ public final class PlayerTargetBan {
 
     /** 一行摘要（启动日志 / 收尾日志用）。 */
     public static String describe() {
-        return ENABLED
+        return enabled
                 ? "玩家索敌排除：对局内玩家设为无敌（原版 TargetingConditions 要求"
                         + " canBeSeenAsEnemy，!isInvulnerable，故任何怪物都不会把玩家当目标；"
                         + "不是隐身，对手玩家照样看得见你）"
-                : "玩家索敌排除：已关闭（ENABLED = false，怪物会照常把玩家当目标）";
+                : "玩家索敌排除：已关闭（combat.player-target-ban = false，怪物会照常把玩家当目标）";
     }
 }

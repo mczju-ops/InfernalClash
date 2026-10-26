@@ -287,7 +287,9 @@ public final class SummonSpawner {
                     //   ★ 用 `LivingEntity#setAI(false)`：它**同时**解决"无法移动"与"无法发射火球"
                     //     （后两条正是烈焰守卫/烈焰熔炉的要求），因为 AI 停了就不会主动寻路或射击。
                     //   ★ 它们的伤害/效果由 abilities 的周期任务给，不依赖原版攻击。
-                    applyStationary(entity, card, side);
+                    // ★★ 1.1.0：**逐组**站桩（组级覆盖卡级）—— 巫术壁垒的史莱姆站桩、
+                    //   骑手有 AI（坐骑死了它才会落下来往前走，正是用户要的）。
+                    applyStationary(entity, card, side, group.stationaryOr(card.summon().stationary()));
                     // ★★ 2026-10-17 第十轮（缺陷 P1-b）：装备（铁套铁剑…）——
                     //   出处 docs/19 第 56 行 + 策划案第 10 行（所有盔甲不提供防御）
                     if (entity instanceof LivingEntity living) {
@@ -941,9 +943,9 @@ public final class SummonSpawner {
      *   {@code abilities} 的周期任务给 ⇒ 不依赖原版攻击。
      * ★ 失败只告警：站不住是**观感/行为**问题，不该让召唤物消失。
      */
-    private void applyStationary(Entity entity, Card card, Side side) {
-        if (card == null || card.summon() == null || !card.summon().stationary()) {
-            return;   // 绝大多数卡：不碰
+    private void applyStationary(Entity entity, Card card, Side side, boolean stationary) {
+        if (card == null || card.summon() == null || !stationary) {
+            return;   // 绝大多数卡（以及"组级写了 false"的那几组）：不碰
         }
         if (!(entity instanceof org.bukkit.entity.Mob mob)) {
             logger.warning("[IC] 卡 " + card.id() + " 写了 stationary: true，但这一组召唤出来的是 "

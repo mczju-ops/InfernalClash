@@ -40,9 +40,24 @@ public final class PlayerProfileHygieneListener implements Listener {
     private final CardItems items;
     private final Logger logger;
 
+    /**
+     * ★★★ <b>待还原账本</b>（2026-10-26 安全修复追加）。
+     *
+     * <p>为什么也挂在这里：{@code PlayerProfileLoadedEvent} 是 MGC 把**快照贴回玩家身上之后**
+     * 发的（`javap -c ProfileManager` 实测）⇒ 如果快照里带着上局的
+     * {@code invulnerable} / {@code allowFlight} / 无限药水效果，**必须在这个事件之后**再还原一次，
+     * 否则会被快照覆盖回去。{@code PlayerJoinEvent} 那条已经覆盖了"没有 profile"的情况。
+     */
+    private final PlayerStateRestore restore;
+
     public PlayerProfileHygieneListener(CardItems items, Logger logger) {
+        this(items, logger, null);
+    }
+
+    public PlayerProfileHygieneListener(CardItems items, Logger logger, PlayerStateRestore restore) {
         this.items = items;
         this.logger = logger;
+        this.restore = restore;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -50,6 +65,15 @@ public final class PlayerProfileHygieneListener implements Listener {
         Player player = event == null ? null : event.getPlayer();
         if (player == null) {
             return;
+        }
+        // ★★★ 2026-10-26：**物品清完之后再对一次临时状态的账**
+        //   （profile 快照可能把上局的 invulnerable / allowFlight / 无线效果又贴回来了）
+        if (restore != null) {
+            int restored = restore.restoreIfPending(player, "profile 载入对账");
+            if (restored > 0 && logger != null) {
+                logger.info("[IC] profile 载入后归还了上局遗留的临时状态（" + player.getName()
+                        + "）：还原 " + restored + " 项（无敌 / 飞行 / 常驻效果 / 经验条）");
+            }
         }
         int removed = CardLoadout.clearOurItems(player, items);
         if (removed > 0 && logger != null) {

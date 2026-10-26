@@ -411,7 +411,7 @@ public final class SpellCaster {
      * @param beat 第几次脉冲（0 = 第一次）—— 用来让土块**往上飘一点**，看起来像在掘
      */
     private void emitBlockFx(Spell.Fx fx, List<ShapeMath.Cell> cells, Location origin,
-                             String matchId, int beat, boolean allCells) {
+                             String matchId, int beat) {
         World world = origin.getWorld();
         if (world == null) {
             return;
@@ -432,14 +432,14 @@ public final class SpellCaster {
             logger.warning("[IC] 方块粒子创建失败（" + fx.block() + "）：" + t);
             return;
         }
-        // 落点：有边界格就沿边界撒（能勾出范围）；没有就撒在落点本身
-        // ★★★ 1.1.0（地壳震击）：「**火焰粒子环 ＋ 在环内区域持续产生泥土破碎粒子**」——
-        //   同一张卡同时写了 `fx.particle` 与 `fx.block` 时，方块粒子改撒**整个区域**
-        //   （环交给 particle 那条路去画）。只写 `block` 的卡（掘墓者）仍是沿边界撒，
-        //   行为一字未变。
+        // 落点：**整个范围**都撒（含最外一圈）。
+        // ★★★ 1.1.0（用户实机）：「地壳震击的环粒子还是换成泥土破碎吧」⇒ 不再画火焰环，
+        //   方块粒子一律铺满全部格 —— 边缘自然读成"一圈泥土碎屑"。
+        //   ★ 掘墓人（唯一另一张写 `block` 的卡）形状是 SINGLE ⇒ cells 只有 1 格，
+        //     「边界」与「全部」是同一格 ⇒ 它的表现一字未变。
         List<ShapeMath.Cell> where = cells.isEmpty()
                 ? List.of(new ShapeMath.Cell(origin.getBlockX(), origin.getBlockZ()))
-                : (allCells ? cells : FxRing.boundary(cells));
+                : cells;
         double y = origin.getBlockY() + 1.0 + (beat % 3) * 0.25;
         // ★★ 2026-10-19 用户裁定（逐字）：「掘墓人**粒子量翻倍**，**显示范围也要扩大一点**」
         //   ⇒ 每格 2 → **4** 颗；散布 0.35 → **0.6** 格（土块铺得更开）。
@@ -488,9 +488,11 @@ public final class SpellCaster {
         //   而这里原先的 `spawnParticle(particle, …)` 没有 data ⇒ **客户端根本不渲染**
         //   ⇒ 配置写对了、装载也过了、屏幕上却什么都没有。
         if (fx.hasBlockParticle()) {
-            // ★ 1.1.0：`particle` 与 `block` **同时**写 ⇒ 方块粒子铺满区域、粒子画边界环；
-            //   只写 `block` ⇒ 只画边界（掘墓者的既有行为）。
-            emitBlockFx(fx, cells, origin, matchId, beat, fx.particle() != null);
+            // ★★★ 1.1.0（用户实机）：「**地壳震击的环粒子还是换成泥土破碎吧**」
+            //   ⇒ 方块粒子**一律铺满整个范围**（含最外一圈）—— 范围边缘自然就读成"一圈泥土碎屑"。
+            //   ★ 对掘墓人**零影响**：它的形状是 SINGLE（cells 只有 1 格），"边界"与"全部"是同一格。
+            //   ★ 写了 `particle` 的卡（目前没有）仍会额外画一圈粒子环。
+            emitBlockFx(fx, cells, origin, matchId, beat);
             if (fx.particle() == null) {
                 return;
             }

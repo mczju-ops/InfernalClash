@@ -26,7 +26,10 @@ spell:
     - type: DAMAGE
       amount: 15
       building-multiplier: 2
+  # ★★ 1.1.0 实机调整（用户逐字）：「**地壳震击的环粒子还是换成泥土破碎吧**」
+  #   ⇒ 不再画火焰环：整片范围（含最外一圈）都用 **泥土破碎粒子**。
+  #   ★ 判据：只写 `block` 时执行层会把方块粒子撒满**所有格**（`SpellCaster#emitBlockFx`）；
+  #     掘墓者是**单格**形状，所以它的表现一字未变。
   fx:
-    particle: FLAME
     block: DIRT
     sound: block.gravel.break

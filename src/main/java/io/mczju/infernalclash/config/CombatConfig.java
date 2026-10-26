@@ -35,7 +35,7 @@ import java.util.TreeSet;
  * 一个是「目标物是什么」（塔与信标）、本类是「战斗时怎么索敌」。
  * 合并会让改战斗参数与改玩法数值在代码里互相牵连。
  */
-public record CombatConfig(int targetRefreshTicks) {
+public record CombatConfig(int targetRefreshTicks, boolean playerTargetBan) {
 
     /** 本配置所在的文件名（{@code combat} 段在 {@code config.yml} 里）。 */
     public static final String FILE = "config.yml";
@@ -45,6 +45,23 @@ public record CombatConfig(int targetRefreshTicks) {
 
     /** 目标刷新间隔的键名（相对 {@code combat} 段）。 */
     public static final String KEY_TARGET_REFRESH_TICKS = "target-refresh-ticks";
+
+    /**
+     * ★★★ <b>「把玩家设成无敌 ⇒ 怪物不索敌玩家」的总开关</b>（{@code combat.player-target-ban}）。
+     *
+     * <h2>为什么它是配置而不是常量（用户 2026-10-26 逐字）</h2>
+     * 「`PlayerTargetBan.ENABLED` 现在是硬编码常量，建议提成 `config.yml` 开关，
+     * 方便切换 PvE 场景。」
+     *
+     * <h2>★ 关掉它会怎样（必须说清，否则运维会误解）</h2>
+     * 关掉 ⇒ **不再**给玩家 {@code setInvulnerable(true)} ⇒
+     * 怪物（含猪灵这类 brain 型）会**照常把玩家当目标**；
+     * 伤害仍然被 {@code battle/PlayerDamageGuard} 拦掉（第二层还在），
+     * 但"怪追着玩家跑"会回来 —— 这正是 PvE 场景想要的。
+     * ★ 默认 <b>true</b>（保持既有玩法），并且**与账本无关**：
+     * 无论开关怎么变，账本都会把"我们改过的那一位"还原掉。
+     */
+    public static final String KEY_PLAYER_TARGET_BAN = "player-target-ban";
 
     /** 已作废的键（{@code docs/03} §3.2，2026-10-15 裁定）。 */
     public static final String KEY_DEPRECATED_TAUNT_MODE = "taunt-mode";
@@ -60,7 +77,19 @@ public record CombatConfig(int targetRefreshTicks) {
     public static final int MAX_TARGET_REFRESH_TICKS = 200;
 
     /** {@code combat} 段允许出现的全部键（★ 多一个都拒绝，见 {@link #rejectUnknownKeys}）。 */
-    private static final List<String> COMBAT_KEYS = List.of(KEY_TARGET_REFRESH_TICKS);
+    private static final List<String> COMBAT_KEYS = List.of(KEY_TARGET_REFRESH_TICKS, KEY_PLAYER_TARGET_BAN);
+
+    /** 出厂默认：玩家索敌排除**开**（与 {@code PlayerTargetBan.DEFAULT_ENABLED} 同一口径）。 */
+    public static final boolean DEFAULT_PLAYER_TARGET_BAN = true;
+
+    /**
+     * 兼容构造（1.1.0 的 {@code player-target-ban} 之前的单参形态）：开关取出厂值。
+     *
+     * <p>★ 保留它 ⇒ 既有夹具与测试一字不改；★ 也让"只有刷新间隔"的老调用点不必关心新键。
+     */
+    public CombatConfig(int targetRefreshTicks) {
+        this(targetRefreshTicks, DEFAULT_PLAYER_TARGET_BAN);
+    }
 
     /** ★ 第二道防线：绕过配置层直接 new 也要挡住（纯类自证）。 */
     public CombatConfig {
@@ -95,8 +124,13 @@ public record CombatConfig(int targetRefreshTicks) {
         //   解析后不可区分），不是缺陷；两种情形都**拒绝启动**。
         int ticks = ConfigReader.requireInt(FILE, section, KEY_TARGET_REFRESH_TICKS,
                 MIN_TARGET_REFRESH_TICKS, MAX_TARGET_REFRESH_TICKS);
+        // ★ 1.1.0（用户 2026-10-26）：本来硬编码在 PlayerTargetBan.ENABLED 的开关提到这里。
+        //   ★ **可选键、缺省 true**：旧现场文件没这一行也能起（符合本项目「只增不改」的现场口径），
+        //     而 ConfigMigrator 会在启动时把它补进现场文件。
+        boolean playerTargetBan = !section.isSet(KEY_PLAYER_TARGET_BAN)
+                || ConfigReader.requireBoolean(FILE, section, KEY_PLAYER_TARGET_BAN);
         rejectDeprecatedAndUnknownKeys(section);
-        return new CombatConfig(ticks);
+        return new CombatConfig(ticks, playerTargetBan);
     }
 
     /** 从磁盘上的 YAML 文件加载（**离线可用**，走 {@link YamlFile#read}）。 */
@@ -107,7 +141,7 @@ public record CombatConfig(int targetRefreshTicks) {
     /** 启动日志用的一行摘要。 */
     public String describe() {
         return "索敌｜每 " + targetRefreshTicks + " tick（" + (targetRefreshTicks / 20.0)
-                + " 秒）重算一次目标";
+                + " 秒）重算一次目标｜玩家无敌索敌排除=" + (playerTargetBan ? "开" : "关");
     }
 
     /**

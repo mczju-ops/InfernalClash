@@ -609,6 +609,11 @@ public final class CardCatalog {
             Boolean groupBuilding = MapReader.isSet(entry, "building")
                     ? MapReader.requireBoolean(file, entry, path, "building")
                     : null;
+            // ★★ 1.1.0（实机缺陷）：「史莱姆死后骑手悬在天上动不了」⇒ 逐组站桩。
+            //   ★ null = 跟随卡级（其余 62 张卡行为一字未变）。
+            Boolean groupStationary = MapReader.isSet(entry, "stationary")
+                    ? MapReader.requireBoolean(file, entry, path, "stationary")
+                    : null;
             groups.add(new Card.Group(entity, count, forward, right,
                     MobGroupCatalog.spreadOf(file, entry, path),
                     readGroupAttributes(file, entry, path),
@@ -619,7 +624,8 @@ public final class CardCatalog {
                     groupBuilding,
                     // ★★★ 1.1.0（巫术壁垒）：逐组能力 —— 史莱姆与骑手的能力完全不同，
                     //   卡级 abilities 会把两边都挂上（烈焰熔炉里 SUMMON 效果的 group 早就有同一格）。
-                    parseGroupAbilities(file, entry)));
+                    parseGroupAbilities(file, entry),
+                    groupStationary));
         }
         validateMounts(file, groups);
 

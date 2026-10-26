@@ -69,27 +69,36 @@ public final class MatchPlayerBuffs implements MatchHooks {
     private final Logger logger;
 
     /**
-     * ★ 本局**之前**这些效果长什么样（玩家 UUID → 每条效果的快照）——
-     * 只在**第一次**动某个玩家时记录一次（后面的补齐不许覆盖它，否则还原就还原错了）。
-     */
-    private final Map<UUID, List<PlayerBuffs.Snapshot>> before = new LinkedHashMap<>();
-
-    /**
-     * ★★★ <b>本局之前这些玩家是不是本来就无敌</b>（玩家 UUID → 原值）——
-     * 2026-10-18 新增（用户第 2 条：「把玩家彻底从头到尾排除出怪物索敌目标」）。
+     * ★★★ <b>「本局临时改过的玩家状态」的落盘账本</b>（2026-10-26 安全修复）。
      *
-     * <p>★ 为什么要记：我们的收尾要把他改回"不无敌"，但**本来就无敌的不能动**
-     * （可能是别的插件给的无敌 / 创造模式）；判据在纯类
-     * {@link io.mczju.infernalclash.policy.PlayerTargetBan#shouldRestore}。
+     * <p>★ <b>为什么从"内存三张表"换成它</b>：用户报的「**玩家无敌外泄**」事故 ——
+     * 玩家中途退出时已经离线，旧的 {@code restoreTargetBan} 对离线玩家直接 {@code continue}
+     * 然后**无条件清空**原值表 ⇒ {@code invulnerable} 留在 playerdata 里 ⇒ **永久无敌**。
+     * 现在所有"原值"都记在 {@link PlayerStateRestore}（**落盘**），
+     * 离线玩家会被留账、下次上线 / 插件 onEnable 时对账还原；
+     * 同一套账本还覆盖 {@code allowFlight}、三条常驻效果、以及经验条。
      */
-    private final Map<UUID, Boolean> invulnerableBefore = new LinkedHashMap<>();
+    private final PlayerStateRestore restore;
 
     private int tickCounter;
     private boolean stopped;
 
+    /**
+     * 兼容构造（1.1.0 的「落盘账本」之前的形态）：内部造一个**只走内存**的账本。
+     *
+     * <p>★ 只给离线夹具/老调用点用 —— 生产路径必须传插件级那个落盘账本
+     * （{@code InfernalClashPlugin#playerStateRestore()}），否则玩家退出时又还原不了。
+     */
     public MatchPlayerBuffs(Plugin plugin, String matchId, Map<Side, UUID> players) {
+        this(plugin, matchId, players, null);
+    }
+
+    public MatchPlayerBuffs(Plugin plugin, String matchId, Map<Side, UUID> players,
+                            PlayerStateRestore restore) {
         this.plugin = plugin;
         this.matchId = matchId;
+        // ★ 账本是**插件级单例**（跨对局共用同一份落盘文件）；为 null 只可能来自离线夹具
+        this.restore = restore != null ? restore : new PlayerStateRestore(null, null, null, null);
         // ★ 注意 EnumMap 的构造器：空 Map 且不是 EnumMap 时会抛 IllegalArgumentException
         //   ⇒ 空名册必须单独处理（这一格是「无人机/关服」那条路，不能因此炸掉开局）
         this.players = players == null || players.isEmpty()
@@ -141,7 +150,6 @@ public final class MatchPlayerBuffs implements MatchHooks {
      * ★ 只开 {@code allowFlight}（双击空格起飞），**不强制** {@code setFlying}：
      * 强制起飞会把玩家顶到空中、也会和"准备阶段的传送"打架。
      */
-    private final java.util.Map<java.util.UUID, Boolean> flightBefore = new java.util.LinkedHashMap<>();
 
     /** 首次/阶段开始时的施加（把「本局之前的样子」记下来，再补上缺的）。 */
     private void applyAll(String trigger) {
@@ -163,10 +171,8 @@ public final class MatchPlayerBuffs implements MatchHooks {
                 banned++;
             }
             snapshotIfAbsent(player);
-            // ★ 创造飞行（本局内）：只加不清；原值记在 flightBefore 里，收尾时还原
-            if (!flightBefore.containsKey(player.getUniqueId())) {
-                flightBefore.put(player.getUniqueId(), player.getAllowFlight());
-            }
+            // ★ 创造飞行（本局内）：**先记账再动手**（原值进落盘账本，退出/关服也能还原）
+            restore.noteAllowFlight(player.getUniqueId(), matchId, player.getAllowFlight());
             if (!player.getAllowFlight()) {
                 player.setAllowFlight(true);
             }
@@ -220,10 +226,8 @@ public final class MatchPlayerBuffs implements MatchHooks {
                 banned++;
             }
             snapshotIfAbsent(player);
-            // ★ 创造飞行（本局内）：只加不清；原值记在 flightBefore 里，收尾时还原
-            if (!flightBefore.containsKey(player.getUniqueId())) {
-                flightBefore.put(player.getUniqueId(), player.getAllowFlight());
-            }
+            // ★ 创造飞行（本局内）：**先记账再动手**（原值进落盘账本，退出/关服也能还原）
+            restore.noteAllowFlight(player.getUniqueId(), matchId, player.getAllowFlight());
             if (!player.getAllowFlight()) {
                 player.setAllowFlight(true);
             }
@@ -276,8 +280,8 @@ public final class MatchPlayerBuffs implements MatchHooks {
         UUID id = player.getUniqueId();
         try {
             boolean now = player.isInvulnerable();
-            // ★ 只记一次「本局之前的样子」（与 before 那条同一口径：后面的补齐不许覆盖它）
-            invulnerableBefore.putIfAbsent(id, now);
+            // ★ 先记账（落盘）：只记一次「本局之前的样子」，后面的补齐不许覆盖它
+            restore.noteInvulnerable(id, matchId, now);
             if (!io.mczju.infernalclash.policy.PlayerTargetBan.shouldForceInvulnerable(now)) {
                 return false;
             }
@@ -296,97 +300,35 @@ public final class MatchPlayerBuffs implements MatchHooks {
     /** 「设无敌失败」只告警一次（每秒会重试，别刷屏）。 */
     private boolean targetBanWarned;
 
-    /** 收尾还原（见类注释的「副作用必须可回退」）。 */
-    private void restoreAll(String reason) {
-        int removed = 0;
-        int reapplied = 0;
-        int kept = 0;
-        for (Map.Entry<UUID, List<PlayerBuffs.Snapshot>> entry : before.entrySet()) {
-            Player player = playerOf(entry.getKey());
-            if (player == null) {
-                continue;   // 离线 ⇒ 效果到期后本来也会消失；不查世界、不猜
-            }
-            for (PlayerBuffs.Snapshot snapshot : entry.getValue()) {
-                PotionEffectType type = resolve(snapshot.spec().effect());
-                if (type == null) {
-                    continue;
-                }
-                switch (PlayerBuffs.restoreAction(snapshot)) {
-                    case REMOVE -> {
-                        player.removePotionEffect(type);
-                        removed++;
-                    }
-                    case REAPPLY -> {
-                        player.addPotionEffect(new PotionEffect(type, snapshot.duration(),
-                                snapshot.amplifier(), false, PlayerBuffs.SHOW_PARTICLES, true), true);
-                        reapplied++;
-                    }
-                    case KEEP -> kept++;
-                }
-            }
-        }
-        before.clear();
-        // ★ 创造飞行还原（2026-10-21）：按进局前记下的原值放回；原本不能飞的 ⇒ 同时落地
-        int flightRestored = 0;
-        for (Map.Entry<UUID, Boolean> entry : flightBefore.entrySet()) {
-            Player player = playerOf(entry.getKey());
-            if (player == null) {
-                continue;   // 离线：下次上线由他自己/别的插件决定，不猜
-            }
-            boolean wasAllowed = Boolean.TRUE.equals(entry.getValue());
-            player.setAllowFlight(wasAllowed);
-            if (!wasAllowed && player.isFlying()) {
-                player.setFlying(false);
-            }
-            flightRestored++;
-        }
-        flightBefore.clear();
-        if (removed + reapplied + kept > 0) {
-            logger.info("[IC] 常驻效果已还原（" + reason + "）：移除 " + removed + " / 放回原样 "
-                    + reapplied + " / 原本就是永久不动 " + kept + "｜matchId=" + matchId
-                    + "｜只动我们记过的那三条效果，绝不 /effect clear 全清"
-                    + "｜飞行还原 " + flightRestored + " 名");
-        }
-        restoreTargetBan(reason);
-    }
-
     /**
-     * ★ <b>把无敌还原掉</b>（2026-10-18 新增，与 {@link #enforceTargetBan} 成对）。
+     * 收尾还原（见类注释的「副作用必须可回退」）。
      *
-     * <p>★ 只还原<b>我们自己改过的那一位</b>：本来无敌的（创造模式飞行 / 别的插件给的）
-     * 一律不动 —— 判据在纯类
-     * {@link io.mczju.infernalclash.policy.PlayerTargetBan#shouldRestore}。
+     * <h2>★★★ 2026-10-26 安全修复：**不再依赖"玩家在线"**</h2>
+     * 旧实现遍历内存里的三张表、对离线玩家 {@code continue}，然后**无条件清空**它们
+     * ⇒ 中途退出的玩家 {@code invulnerable} / {@code allowFlight} / 无限药水效果**全部留在身上**
+     * （用户报的「玩家无敌外泄」）。现在：
+     * <ol>
+     *   <li>所有原值都在**落盘账本** {@link PlayerStateRestore} 里；</li>
+     *   <li>本方法只负责"对**此刻在线**的人还账"，离线的**留账**；</li>
+     *   <li>离线那几位由 {@code PlayerJoinEvent} / {@code PlayerProfileLoadedEvent} /
+     *       插件 {@code onEnable} 三个入口补还原；</li>
+     *   <li>{@code onStop} 与 {@code onDisable} 都会调到这里（关服也能还）。</li>
+     * </ol>
      */
-    private void restoreTargetBan(String reason) {
-        int restored = 0;
-        int kept = 0;
-        for (Map.Entry<UUID, Boolean> entry : invulnerableBefore.entrySet()) {
-            Player player = playerOf(entry.getKey());
-            if (player == null) {
-                continue;   // 离线 ⇒ 下次上线本来也带着我们设的值，但拿不到对象就不猜
-            }
-            try {
-                boolean now = player.isInvulnerable();
-                if (io.mczju.infernalclash.policy.PlayerTargetBan.shouldRestore(
-                        Boolean.TRUE.equals(entry.getValue()), now)) {
-                    player.setInvulnerable(false);
-                    restored++;
-                } else if (now) {
-                    kept++;   // 本来就无敌 ⇒ 保持
-                }
-            } catch (Throwable t) {
-                logger.warning("[IC] 还原「玩家无敌」失败（" + entry.getKey() + "）：" + t
-                        + "，他可能仍处于无敌（只影响观感/被索敌，不影响对局结果）");
-            }
+    private void restoreAll(String reason) {
+        int before = restore.pendingCount();
+        if (before > 0) {
+            logger.info("[IC] 开始归还本局的玩家临时状态（" + reason + "）：账本里 " + before
+                    + " 名待还原｜matchId=" + matchId);
         }
-        invulnerableBefore.clear();
-        if (restored + kept > 0) {
-            logger.info("[IC] 玩家索敌排除已还原（" + reason + "）：改回不无敌 " + restored
-                    + " 名 / 本来就无敌保持不动 " + kept + " 名｜matchId=" + matchId
-                    + "｜只还原我们自己改过的那一位");
+        int handled = restore.restoreAllOnline(reason + "｜对局收尾");
+        if (handled > 0 || before > 0) {
+            logger.info("[IC] 玩家临时状态归还（" + reason + "）：本次处理 " + handled
+                    + " 名在线玩家｜仍待还原（离线）" + restore.pendingCount()
+                    + " 名｜matchId=" + matchId
+                    + "｜★ 离线那几位不会丢：账本已落盘，他们上线时会被立刻还原");
         }
     }
-
     /** 这条玩家现在缺哪几条（纯判据在 {@link PlayerBuffs#missing}）。 */
     private PlayerBuffs.Spec[] missingFor(Player player) {
         List<PlayerBuffs.Spec> missing = PlayerBuffs.missing(PlayerBuffs.DEFAULT,
@@ -410,20 +352,22 @@ public final class MatchPlayerBuffs implements MatchHooks {
                 false, PlayerBuffs.SHOW_PARTICLES, true);
     }
 
-    /** 记下「本局之前的样子」（只记一次；后面每秒补齐不许覆盖它）。 */
+    /**
+     * 记下「本局之前的样子」（只记一次；后面每秒补齐不许覆盖它）。
+     *
+     * <p>★ 2026-10-26：不再存在内存表里，而是**逐条写进落盘账本**
+     * （{@link PlayerStateRestore#noteEffect}），这样玩家退出/关服之后也还原得回来。
+     */
     private void snapshotIfAbsent(Player player) {
-        before.computeIfAbsent(player.getUniqueId(), id -> {
-            List<PlayerBuffs.Snapshot> snapshots = new ArrayList<>();
-            for (PlayerBuffs.Spec spec : PlayerBuffs.DEFAULT) {
-                PotionEffectType type = resolve(spec.effect());
-                PotionEffect current = type == null ? null : player.getPotionEffect(type);
-                snapshots.add(new PlayerBuffs.Snapshot(spec, current != null,
-                        current != null && current.isInfinite(),
-                        current == null ? 0 : current.getDuration(),
-                        current == null ? 0 : current.getAmplifier()));
-            }
-            return List.copyOf(snapshots);
-        });
+        for (PlayerBuffs.Spec spec : PlayerBuffs.DEFAULT) {
+            PotionEffectType type = resolve(spec.effect());
+            PotionEffect current = type == null ? null : player.getPotionEffect(type);
+            restore.noteEffect(player.getUniqueId(), matchId, new PlayerBuffs.Snapshot(spec,
+                    current != null,
+                    current != null && current.isInfinite(),
+                    current == null ? 0 : current.getDuration(),
+                    current == null ? 0 : current.getAmplifier()));
+        }
     }
 
     /** 效果名 → 类型（与 {@code spell/EffectApplier} 同一口径：注册表按名查）。 */

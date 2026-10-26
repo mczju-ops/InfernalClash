@@ -26,7 +26,8 @@ import io.mczju.infernalclash.card.Spell;
  *       ★ 下限保证"即使法术没有任何时长（火球术）也亮够 2 秒"（这就是"延长持续时间"）；
  *       ★ 上限是<b>护栏</b>：卡里把 {@code duration-ticks} 写成天文数字时，
  *       视觉任务必须有界（一个跑一小时的粒子任务会把主线程拖住）。</li>
- *   <li><b>只认这两类效果</b>：{@code SUMMON_DELAYED} 与 {@code SUMMON_PERIODICALLY}。
+ *   <li><b>只认「自己声明了时长」的这几类效果</b>：{@code SUMMON_DELAYED} /
+     *       {@code SUMMON_PERIODICALLY} / ★ 1.1.0 新增的 {@code AREA_DAMAGE} 与 {@code PULL}
  *       ★ 刻意<b>不</b>扫 {@code ATTRIBUTE} / {@code POTION} 的 {@code duration-ticks} ——
  *       那会把"加速药水 10 秒"也变成一圈亮 10 秒的环，而用户要的是
  *       「持续<b>召唤</b>的法术一直显示」，不是"所有有时长的法术都一直显示"。</li>
@@ -71,6 +72,11 @@ public final class FxTimeline {
             int ticks = switch (effect.type()) {
                 case SUMMON_DELAYED -> intParam(effect, "delay-ticks");
                 case SUMMON_PERIODICALLY -> intParam(effect, "duration-ticks");
+                // ★★★ 1.1.0（用户实机）：「**凋灵领域的粒子效果并没有持续 8 秒**」——
+                //   它是一次施放就铺开、之后按 duration 每拍结算的"领域"，特效必须亮满整段。
+                //   ★ 同一口径也适用于「大旋风」的牵引（40 tick = 2 秒的拉扯过程）。
+                //   ★ 判据仍是"效果自己声明了时长"，不是"法术有伤害就亮很久"（后一条已被否决过）。
+                case AREA_DAMAGE, PULL -> intParam(effect, "duration-ticks");
                 default -> 0;
             };
             if (ticks > longest) {

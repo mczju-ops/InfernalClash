@@ -66,6 +66,15 @@ arena:
 combat:
   target-refresh-ticks: 10
 
+  # ★★★ 1.1.0（2026-10-26 用户裁定）：「`PlayerTargetBan.ENABLED` 现在是硬编码常量，
+  #   建议提成 config.yml 开关，方便切换 PvE 场景。」
+  #   开（缺省）＝ 对局内把玩家设为无敌 ⇒ 原版任何怪物（含猪灵这类 brain 型）都不会索敌玩家；
+  #                不是隐身，对手玩家照样看得见你。★ 这是"索敌层"，伤害层另有 PlayerDamageGuard。
+  #   关          ＝ 不给玩家设无敌 ⇒ 怪会照常追玩家（PvE 场景想要的就是这个）。
+  #   ★ 无论开关怎么变，「我们改过的那一位」都会被账本还原（见 player-restore.yml）。
+  #   ★ 这个键是**可选**的：旧现场文件没有它也能启动（缺省 = 开）。
+  player-target-ban: true
+
 training:
   #   · name  = 侧边栏与日志里显示的名字
   #   · deck  = 这一套的 8 张卡

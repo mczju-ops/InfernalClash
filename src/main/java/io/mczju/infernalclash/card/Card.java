@@ -183,11 +183,23 @@ public record Card(String id,
      *        （两者都保留，顺序 = 先卡级后组级）。缺省空表 ⇒ 63 张卡里 62 张行为一字未变。
      *        ★ 与法术 {@code SUMMON} 效果里的 {@code group.abilities} 是**同一个概念**
      *        （那边早就支持，见 {@code cards/blaze_furnace.yml}）。
+     * @param stationary ★★ <b>这一组站桩吗</b>（{@code group[].stationary}）—— 1.1.0 补。
+     *
+     *        <h3>为什么必须逐组（一个真实的实机缺陷）</h3>
+     *        「巫术壁垒」= 史莱姆驮着亡灵契约师。用户 2026-10-26 实机报：
+     *        「**史莱姆死亡后，这个亡灵契约师依旧悬在天上动不了；设计上它应该下来往前走，开始进攻**」。
+     *        根因：卡级 {@code stationary: true} 把**两支**都 {@code setAI(false)} 了 ⇒
+     *        坐骑死了以后骑手还留在原地（而且它本来在史莱姆背上，所以是"悬在天上"）。
+     *
+     *        <h3>口径</h3>
+     *        <b>{@code null}（缺省）</b>＝ 跟随卡级 {@code summon.stationary}（其余 62 张卡是这一档，
+     *        行为一字未变）；非 {@code null} ⇒ <b>本组以此为准</b>。
+     *        ★ 覆盖方向与 {@code building} / {@code attributes} 一致：<b>组级 > 卡级</b>。
      */
     public record Group(String entity, int count, int forward, int right, double spread,
                         Attributes attributes, String mount, java.util.List<Integer> rows,
                         Formation formation, Integer lifetimeTicks, Boolean building,
-                        List<Ability> abilities) {
+                        List<Ability> abilities, Boolean stationary) {
 
         /**
          * 规范构造器：{@code rows} 的 {@code null} 归一成空表。
@@ -205,21 +217,21 @@ public record Card(String id,
         public Group(String entity, int count, int forward, int right, double spread,
                      Attributes attributes) {
             this(entity, count, forward, right, spread, attributes, null, null, null, null, null,
-                    null);
+                    null, null);
         }
 
         /** 兼容构造（写骑乘，不写方阵 / 成形排布）。 */
         public Group(String entity, int count, int forward, int right, double spread,
                      Attributes attributes, String mount) {
             this(entity, count, forward, right, spread, attributes, mount, null, null, null, null,
-                    null);
+                    null, null);
         }
 
         /** 兼容构造（写方阵，不写成形排布）—— 2026-10-18 {@code formation} 之前的那一参形态。 */
         public Group(String entity, int count, int forward, int right, double spread,
                      Attributes attributes, String mount, java.util.List<Integer> rows) {
             this(entity, count, forward, right, spread, attributes, mount, rows, null, null, null,
-                    null);
+                    null, null);
         }
 
         /** 兼容构造（写成形排布，不写存活期）—— 2026-10-18 {@code lifetime-ticks} 之前的那一参形态。 */
@@ -227,7 +239,7 @@ public record Card(String id,
                      Attributes attributes, String mount, java.util.List<Integer> rows,
                      Formation formation) {
             this(entity, count, forward, right, spread, attributes, mount, rows, formation, null,
-                    null, null);
+                    null, null, null);
         }
 
         /** 兼容构造（1.1.0 {@code group[].building} 之前的十参形态）。 */
@@ -235,7 +247,7 @@ public record Card(String id,
                      Attributes attributes, String mount, java.util.List<Integer> rows,
                      Formation formation, Integer lifetimeTicks) {
             this(entity, count, forward, right, spread, attributes, mount, rows, formation,
-                    lifetimeTicks, null, null);
+                    lifetimeTicks, null, null, null);
         }
 
         /** 兼容构造（1.1.0 {@code group[].abilities} 之前的十一参形态）。 */
@@ -243,7 +255,7 @@ public record Card(String id,
                      Attributes attributes, String mount, java.util.List<Integer> rows,
                      Formation formation, Integer lifetimeTicks, Boolean building) {
             this(entity, count, forward, right, spread, attributes, mount, rows, formation,
-                    lifetimeTicks, building, null);
+                    lifetimeTicks, building, null, null);
         }
 
         /**
@@ -253,6 +265,11 @@ public record Card(String id,
          */
         public boolean buildingOr(boolean cardLevel) {
             return building == null ? cardLevel : building;
+        }
+
+        /** 这一组站不站桩（组级覆盖；没写 ⇒ 跟随卡级）。 */
+        public boolean stationaryOr(boolean cardLevel) {
+            return stationary == null ? cardLevel : stationary;
         }
 
         /** 这一组有没有存活期（{@code lifetime-ticks} 非 null）。 */

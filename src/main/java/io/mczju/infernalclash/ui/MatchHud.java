@@ -251,10 +251,18 @@ public final class MatchHud implements MatchHooks {
             regularBar.removePlayer(player);
             overtimeBar.removePlayer(player);
             detachSidebar(player);
-            // ★ 经验条归零（而不是"还原成进场前的值"—— 我们没记过那个值，见 docs/05 E20）
-            player.setLevel(0);
-            player.setExp(0.0f);
-            player.setTotalExperience(0);
+            // ★★★ 2026-10-26（安全修复）：经验条**还原成进局前的值**，不再"归零"。
+            //   旧口径（docs/05 E20「我们没记过那个值 ⇒ 归零」）会**抹掉玩家的等级**；
+            //   现在原值记在落盘账本里，这里只负责触发还原（顺手也把无敌/飞行还掉）。
+            io.mczju.infernalclash.game.PlayerStateRestore restore = restoreOrNull();
+            if (restore != null) {
+                restore.restoreIfPending(player, "战斗 HUD 拆除");
+            } else {
+                // 账本拿不到（理论上不会）⇒ 退回旧行为：至少别把对局内的等级留在身上
+                player.setLevel(0);
+                player.setExp(0.0f);
+                player.setTotalExperience(0);
+            }
             removed++;
         }
         regularBar.removeAll();
@@ -605,6 +613,11 @@ public final class MatchHud implements MatchHooks {
                 continue;
             }
             XpBarPolicy.Bar bar = XpBarPolicy.of(match.xp(entry.getKey()), config.maxLevel());
+            // ★★★ 2026-10-26（安全修复）：**动玩家的经验条之前先把原值记进落盘账本**。
+            //   经验条（level / exp / totalExperience）是会落盘的状态；旧实现收尾时直接归零
+            //   （= 抹掉玩家的等级，docs/05 E20），而且玩家中途退出时连"归零"都不会执行。
+            //   ⇒ 现在记在账本里，收尾 / 退出 / 下次上线都会还原成进局前的值。
+            noteXpBefore(player);
             if (player.getLevel() != bar.level()) {
                 player.setLevel(bar.level());
             }
@@ -617,6 +630,30 @@ public final class MatchHud implements MatchHooks {
             if (player.getTotalExperience() != total) {
                 player.setTotalExperience(total);
             }
+        }
+    }
+
+    /** 记下「本局之前这条经验条长什么样」（只记第一次；账本负责落盘与还原）。 */
+    private void noteXpBefore(Player player) {
+        if (player == null) {
+            return;
+        }
+        io.mczju.infernalclash.game.PlayerStateRestore restore = restoreOrNull();
+        if (restore == null) {
+            return;
+        }
+        restore.noteXp(player.getUniqueId(), matchId, player.getLevel(), player.getExp(),
+                player.getTotalExperience());
+    }
+
+    /** 账本（插件级单例）；拿不到 ⇒ {@code null}（离线夹具 / 插件未就绪，绝不 NPE）。 */
+    private io.mczju.infernalclash.game.PlayerStateRestore restoreOrNull() {
+        try {
+            // ★ 本类持有的是 bukkit 的 Plugin（离线夹具也可能传别的实现）⇒ 用 instanceof 取
+            return plugin instanceof io.mczju.infernalclash.InfernalClashPlugin ic
+                    ? ic.playerStateRestore() : null;
+        } catch (Throwable t) {
+            return null;
         }
     }
 

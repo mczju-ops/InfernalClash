@@ -204,6 +204,10 @@ public final class InfernalClashPlugin extends JavaPlugin {
         instance = this;
 
         saveShippedFiles();
+        // ★★★ 2026-10-26 安全修复（用户：「玩家无敌外泄的严重bug」）：
+        //   **必须在任何对局/监听器之前**把待还原账本读出来并对账还原 ——
+        //   这样"上一次崩溃/关服留下的无敌玩家"在这次启动就会被修好。
+        initPlayerStateRestore();
         if (!loadConfigs()) {
             return;   // loadConfigs 内部已经 disablePlugin
         }
@@ -358,7 +362,63 @@ public final class InfernalClashPlugin extends JavaPlugin {
                 getLogger().warning("停用对局 " + service.matchId() + " 时出错：" + t);
             }
         }
+        // ★★★ 2026-10-26 安全修复：**onDisable 也必须还一次账**
+        //   （用户逐字：「onDisable 也走一次还原（现在只靠 onStop，关服/崩溃时拿不到在线玩家）」）。
+        //   ★ onStop 已经在每场收尾时调过；这里再来一次是幂等的"最后一道闸"：
+        //     覆盖「对局没开但玩家身上还有账」以及「某场 stop 抛异常」这两种残留。
+        //   ★ 还不了的（离线）留在账本文件里，下次启动 onEnable 继续对账。
+        try {
+            if (playerStateRestore != null) {
+                int left = playerStateRestore.pendingCount();
+                int handled = playerStateRestore.restoreAllOnline("插件停用");
+                getLogger().info("玩家临时状态归还（插件停用）：处理 " + handled + " 名在线玩家"
+                        + "｜停用前待还原 " + left + " 名｜之后仍待还原 "
+                        + playerStateRestore.pendingCount() + " 名（离线，下次启动继续对账）");
+            }
+        } catch (Throwable t) {
+            getLogger().warning("停用时归还玩家临时状态失败（不影响停用流程）：" + t);
+        }
         getLogger().info("InfernalClash 已禁用");
+    }
+
+    /**
+     * ★★★ <b>初始化「玩家临时状态待还原账本」</b>（2026-10-26 安全修复）。
+     *
+     * <h2>三件事，顺序固定</h2>
+     * <ol>
+     *   <li>从 {@code player-restore.yml} 读入上次留下的账；</li>
+     *   <li>对**此刻在线**的玩家立刻还账（重启后玩家往往还没上线，这一格通常是 0）；</li>
+     *   <li>注册 {@code PlayerStateRestoreListener}（{@code PlayerJoinEvent} /
+     *       {@code PlayerQuitEvent}）—— 上线对账、退出立刻还账。</li>
+     * </ol>
+     * ★ 失败方向：任何一步抛 ⇒ <b>只告警、不阻止启动</b>
+     * （这是收尾用的辅助数据；启动失败会让整个游戏不可用，比"少还原一次"严重得多）。
+     */
+    private void initPlayerStateRestore() {
+        try {
+            java.io.File file = new java.io.File(getDataFolder(),
+                    io.mczju.infernalclash.game.PlayerStateRestore.FILE);
+            this.playerStateRestore = new io.mczju.infernalclash.game.PlayerStateRestore(this, file);
+            this.playerStateRestore.load();
+            int left = this.playerStateRestore.pendingCount();
+            int handled = this.playerStateRestore.restoreAllOnline("插件启用");
+            if (left > 0) {
+                getLogger().info("待还原账本：启动时读到 " + left + " 名玩家欠着临时状态"
+                        + "（无敌 / 飞行 / 常驻效果 / 经验条）⇒ 其中 " + handled
+                        + " 名此刻在线、已还原；其余 " + this.playerStateRestore.pendingCount()
+                        + " 名等他们上线时自动还原");
+            }
+            getServer().getPluginManager().registerEvents(
+                    new io.mczju.infernalclash.game.PlayerStateRestoreListener(playerStateRestore,
+                            getLogger(), this), this);
+        } catch (Throwable t) {
+            getLogger().warning("待还原账本初始化失败（不影响启动，但离线玩家的临时状态可能漏还原）：" + t);
+            if (this.playerStateRestore == null) {
+                // 至少留一个内存版，避免后续 NPE（它的 file=null ⇒ 只走内存）
+                this.playerStateRestore = new io.mczju.infernalclash.game.PlayerStateRestore(
+                        this, null);
+            }
+        }
     }
 
     /**
@@ -383,6 +443,20 @@ public final class InfernalClashPlugin extends JavaPlugin {
 
     /** 兜底清理的周期任务（停用时取消）。 */
     private BukkitTask legacyPurgeTicker;
+
+    /**
+     * ★★★ <b>「本局临时改过的玩家状态」的落盘账本</b>（2026-10-26 安全修复）。
+     *
+     * <p>用户报的「<b>玩家无敌外泄</b>」事故的根治点：原值必须<b>落盘</b>，
+     * 离线玩家留账、下次上线 / 本插件 {@code onEnable} 时对账还原。
+     * 详见 {@link io.mczju.infernalclash.game.PlayerStateRestore} 的类注释。
+     */
+    private io.mczju.infernalclash.game.PlayerStateRestore playerStateRestore;
+
+    /** 待还原账本（永不为 {@code null}：构造在 {@code onEnable} 的很早期）。 */
+    public io.mczju.infernalclash.game.PlayerStateRestore playerStateRestore() {
+        return playerStateRestore;
+    }
 
     /**
      * ★★★ <b>启动兜底清理的接线</b>。
@@ -798,6 +872,12 @@ public final class InfernalClashPlugin extends JavaPlugin {
 
         // ★ 战斗配置（config.yml 的 combat 段，P5）
         this.combatConfig = CombatConfig.load(root);
+        // ★★★ 1.1.0（用户 2026-10-26）：「`PlayerTargetBan.ENABLED` 现在是硬编码常量，
+        //   建议提成 config.yml 开关，方便切换 PvE 场景」⇒ 这里把配置灌进纯策略类。
+        io.mczju.infernalclash.policy.PlayerTargetBan.configure(combatConfig.playerTargetBan());
+        getLogger().info("[IC] 玩家索敌排除：" + (combatConfig.playerTargetBan() ? "开" : "关")
+                + "（config.yml 的 combat.player-target-ban）｜"
+                + io.mczju.infernalclash.policy.PlayerTargetBan.describe());
 
         // ★ 训练人机配置（config.yml 的 training 段）
         //   ★ 2026-10-21 用户裁定：多套人机（training.bots）＋ 每张法术卡的全局规则（training.spell-rules）
@@ -838,7 +918,8 @@ public final class InfernalClashPlugin extends JavaPlugin {
         //   ⇒ 在 MGC 的 `PlayerProfileLoadedEvent`（ProfileCapture#apply **之后**）按 PDC
         //     逐件清掉**本插件自己的**物品（卡牌 / 战斗物品 / 选卡菜单），不碰 MGC 的大厅钟。
         getServer().getPluginManager().registerEvents(
-                new io.mczju.infernalclash.game.PlayerProfileHygieneListener(cardItems, getLogger()), this);
+                new io.mczju.infernalclash.game.PlayerProfileHygieneListener(cardItems, getLogger(),
+                        playerStateRestore), this);
         this.summonSpawner = new SummonSpawner(this, this.mobGroups, this.unitRegistry);
         // ★ 法术管线（P6）：同样要在 unitRegistry 之后（它读账本来确定"范围内有哪些实体"）
         this.spellCaster = new io.mczju.infernalclash.spell.SpellCaster(

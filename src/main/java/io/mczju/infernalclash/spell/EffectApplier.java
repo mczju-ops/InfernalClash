@@ -584,13 +584,18 @@ public final class EffectApplier {
             if (world == null) {
                 return;
             }
-            double angle = random.nextDouble() * Math.PI * 2.0;
-            double distance = Math.sqrt(random.nextDouble()) * radius;
-            world.spawnParticle(org.bukkit.Particle.NOXIOUS_GAS_CLOUD,
-                    center.getX() + Math.cos(angle) * distance,
-                    center.getY() + 0.4 + random.nextDouble() * 1.2,
-                    center.getZ() + Math.sin(angle) * distance,
-                    3, 0.2, 0.2, 0.2, 0.0);
+            // ★ 1.1.0（用户实机：「凋灵领域的粒子效果并没有持续 8 秒」）：
+            //   持续期已由 `FxTimeline` 按 `duration-ticks` 拉满 160 tick（环每 5 tick 补一帧）；
+            //   这里再把**药水云**加密到每 tick 两簇，让 8 秒里一直有东西在动。
+            for (int puff = 0; puff < 2; puff++) {
+                double angle = random.nextDouble() * Math.PI * 2.0;
+                double distance = Math.sqrt(random.nextDouble()) * radius;
+                world.spawnParticle(org.bukkit.Particle.NOXIOUS_GAS_CLOUD,
+                        center.getX() + Math.cos(angle) * distance,
+                        center.getY() + 0.4 + random.nextDouble() * 1.2,
+                        center.getZ() + Math.sin(angle) * distance,
+                        3, 0.2, 0.2, 0.2, 0.0);
+            }
             if (!ringBeat) {
                 return;
             }

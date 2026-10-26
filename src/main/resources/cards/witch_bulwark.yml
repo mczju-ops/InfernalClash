@@ -23,11 +23,14 @@ rarity: RARE
 #   ★ 两支能力完全不同（史莱姆只有凋零，骑手才会扔火球）⇒ 用 `group[].abilities`。
 summon:
   group:
-    # ---- 载具：大型史莱姆（size 4 = 大型；40 血；登场带凋零 I；死亡不分裂）----
+    # ---- 载具：大型史莱姆（size 4 = 大型；40 血；登场带**凋零 II**；死亡不分裂）----
     - entity: SLIME
       count: 1
       offset: { forward: 0, right: 0 }
       building: true
+      # ★★ 1.1.0 实机修复：「史莱姆死亡后骑手依旧悬在天上动不了」——
+      #   **站桩只给史莱姆这一组**；骑手保留 AI，坐骑一死它就落下来往前走、开始扔火球。
+      stationary: true
       attributes:
         size: 4
         health: 40
@@ -70,12 +73,12 @@ summon:
   taunt: false
   # 卡级 false：只有史莱姆那一组（组级 true）算建筑
   building: false
-  # 「不能移动」：两组都站桩（载具的 MountDriveGoal 也因 AI 关闭而不会走）
-  stationary: true
+  # ★ 「不能移动」**只给史莱姆那一组**（组级 stationary）；骑手保持 AI。
+  #   ★ 卡级刻意不写 stationary：那会把骑手也冻住 —— 坐骑死后它会悬在原地（用户实测报的缺陷）。
   # 骑手「进 8 格站定」＝ 原卡同一格（`stop-when-target-within: 8`）
   stop-when-target-within: 8
   equipment:
-    # 装备只给骑手（史莱姆不穿活灵契约师那套蓝皮革 + 金纹饰）
+    # 装备只给骑手（史莱姆不穿亡灵契约师那套蓝皮革 + 金纹饰）
     groups: [SKELETON]
     helmet: LEATHER_HELMET
     chestplate: LEATHER_CHESTPLATE

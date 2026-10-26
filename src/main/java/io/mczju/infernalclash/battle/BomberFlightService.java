@@ -98,8 +98,20 @@ final class BomberFlightService {
                 continue;
             }
             if (!isBomber(self)) {
-                continue;   // 50/51 张卡不是轰炸机
+                continue;   // 非轰炸机卡
             }
+            // ★★★ 1.1.0（美愿轰炸机）：伤害 / 节拍 / 尾迹粒子改成**读卡**
+            //   （{@code summon.bomber-damage} / {@code bomber-interval-ticks} / {@code bomber-particle}）。
+            //   ★ 不写 ⇒ 沿用老的 5 点 / 10 tick / FLAME ⇒ 怨恨轰炸机行为一字未变。
+            Card card = cardOf(self);
+            Card.Summon.Extra extra = card == null || card.summon() == null
+                    ? Card.Summon.Extra.NONE : card.summon().extra();
+            double damagePerHit = extra.bomberDamage() == null
+                    ? DAMAGE_PER_HIT : extra.bomberDamage();
+            int damageInterval = extra.bomberIntervalTicks() == null
+                    ? DAMAGE_INTERVAL_TICKS : extra.bomberIntervalTicks();
+            org.bukkit.Particle trail = resolveParticle(
+                    extra.bomberParticle() == null ? "FLAME" : extra.bomberParticle());
             UUID id = self.getUniqueId();
             if (aiDisabled.add(id)) {
                 // ★ 一次性关掉原版 AI（= docs/19 的「无法通过吐火球攻击」）
@@ -151,8 +163,11 @@ final class BomberFlightService {
                 self.teleport(new Location(self.getWorld(), next[0], next[1], next[2], yaw, pitch));
                 self.setFallDistance(0.0f);
                 // ★ 用户第 4 条：轰炸机的特效 = **火焰**（它没有 abilities，所以这里补一条尾迹）
-                self.getWorld().spawnParticle(org.bukkit.Particle.FLAME,
+            //   ★ 1.1.0：粒子名改成读卡（美愿轰炸机 = HEART / TOTEM 之类，怨恨轰炸机仍是 FLAME）
+            if (trail != null) {
+                self.getWorld().spawnParticle(trail,
                         next[0], next[1] + 0.6, next[2], 3, 0.15, 0.15, 0.15, 0.0);
+            }
             } catch (Throwable t) {
                 logger.warning("[IC] 轰炸机位移写入失败（" + id + "）：" + t);
                 continue;
@@ -160,10 +175,10 @@ final class BomberFlightService {
             if (step.state() != BomberFlight.State.DROP) {
                 // ★ 飞行中也在"投弹结算"节拍上：用户的口径是"每 0.5 秒 5 点"，
                 //   与那 2 秒一次的视觉火球**是两条独立的节拍**（伤害不等火球）。
-                bombDamage(id, target, nowTick);
+                bombDamage(id, target, nowTick, damagePerHit, damageInterval, trail);
                 continue;
             }
-            bombDamage(id, target, nowTick);
+            bombDamage(id, target, nowTick, damagePerHit, damageInterval, trail);
             long last = lastDrop.getOrDefault(id, Long.MIN_VALUE);
             if (nowTick - last < DROP_INTERVAL_TICKS) {
                 continue;
@@ -177,13 +192,15 @@ final class BomberFlightService {
     }
 
     /**
-     * ★ <b>每 {@value #DAMAGE_INTERVAL_TICKS} tick 对当前目标结算一次伤害</b>（用户第 1 条）。
+     * ★ <b>每 {@code interval} tick 对当前目标结算一次伤害</b>（用户第 1 条）。
      *
      * <p>★ 单参 {@code damage(double)}（不带实体源）⇒ 不会有"被它推着走"的附带击退
      * （与防御塔光束、烈焰守卫递增伤害同一口径）。
      * ★ 只在到拍时打（每个轰炸机各记一个下一次的 tick），失败只告警一次不刷屏。
+     * ★★ 1.1.0：伤害 / 节拍 / 粒子全部由**调用方按卡**给（怨恨轰炸机仍是 5 / 10 / FLAME）。
      */
-    private void bombDamage(UUID id, LivingEntity target, long nowTick) {
+    private void bombDamage(UUID id, LivingEntity target, long nowTick, double damagePerHit,
+                            int damageInterval, org.bukkit.Particle trail) {
         Long next = nextDamage.get(id);
         if (next == null) {
             next = nowTick;   // 第一次出手不延迟
@@ -191,13 +208,15 @@ final class BomberFlightService {
         if (nowTick < next) {
             return;
         }
-        nextDamage.put(id, nowTick + DAMAGE_INTERVAL_TICKS);
+        nextDamage.put(id, nowTick + Math.max(1, damageInterval));
         try {
-            target.damage(DAMAGE_PER_HIT);
-            // ★ 用户第 4 条：轰炸机的特效 = 火焰 ⇒ 命中处一簇
-            target.getWorld().spawnParticle(org.bukkit.Particle.FLAME,
-                    target.getLocation().add(0.0, target.getHeight() * 0.5, 0.0),
-                    10, 0.25, 0.35, 0.25, 0.01);
+            target.damage(damagePerHit);
+            // ★ 用户第 4 条：轰炸机的特效 = 火焰 ⇒ 命中处一簇（1.1.0 起按卡）
+            if (trail != null) {
+                target.getWorld().spawnParticle(trail,
+                        target.getLocation().add(0.0, target.getHeight() * 0.5, 0.0),
+                        10, 0.25, 0.35, 0.25, 0.01);
+            }
         } catch (Throwable t) {
             logger.warning("[IC] 轰炸机伤害结算失败（" + id + "）：" + t);
         }
@@ -223,13 +242,40 @@ final class BomberFlightService {
 
     /** 这张卡是不是轰炸机（由卡上的 {@code summon.bomber} 决定）。 */
     private boolean isBomber(Mob self) {
-        String cardId = registry.cardIdOf(self);
-        if (cardId == null) {
-            return false;
-        }
-        Card card = catalog.cards().get(cardId);
+        Card card = cardOf(self);
         return card != null && card.summon() != null && card.summon().bomber();
     }
+
+    /** 这个单位的卡（{@code null} = 不是我们的卡 / 卡池里没有）。 */
+    private Card cardOf(Mob self) {
+        String cardId = registry.cardIdOf(self);
+        if (cardId == null) {
+            return null;
+        }
+        return catalog.cards().get(cardId);
+    }
+
+    /**
+     * 粒子名 → {@link org.bukkit.Particle}（解析不出来 ⇒ {@code null} 并**只告警一次**）。
+     *
+     * <p>★ 装载期已经校验过 {@code summon.bomber-particle}（写错直接拒绝启动），
+     * 这里只是兜底（例如卡池被热替换）。
+     */
+    private org.bukkit.Particle resolveParticle(String name) {
+        try {
+            return org.bukkit.Particle.valueOf(name.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (Throwable t) {
+            if (particleWarned.compareAndSet(false, true)) {
+                logger.warning("[IC] 轰炸机粒子 " + name + " 解析失败，本场改用 FLAME（只影响观感）："
+                        + t);
+            }
+            return org.bukkit.Particle.FLAME;
+        }
+    }
+
+    /** 「粒子名解析失败」只告警一次。 */
+    private final java.util.concurrent.atomic.AtomicBoolean particleWarned =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
 
     /** 对局收尾：清空记账（幂等；AI 已关过就保持关着 —— 实体马上会被回收）。 */
     void clear() {

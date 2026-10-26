@@ -115,6 +115,15 @@ public final class MatchService {
      */
     private final io.mczju.infernalclash.policy.CastMemory castMemory =
             new io.mczju.infernalclash.policy.CastMemory();
+
+    /**
+     * ★★★ <b>本局的「援军」状态</b>（1.1.0；见 {@link #reinforcementMemory()}）。
+     *
+     * <p>★ 与 {@link #castMemory} 同一形状：**每局一个新实例** ⇒ 不需要显式清零。
+     * ★ 构造器里两方直接进入「记录下一张牌」状态（卡面「对战开始时…记录」）。
+     */
+    private final io.mczju.infernalclash.policy.ReinforcementMemory reinforcementMemory =
+            new io.mczju.infernalclash.policy.ReinforcementMemory();
     /**
      * ★ <b>本局的真人阵营</b>（= 需要确认卡组的那几方）——构造时按名册算一次。
      *
@@ -399,6 +408,17 @@ public final class MatchService {
      */
     public io.mczju.infernalclash.policy.CastMemory castMemory() {
         return castMemory;
+    }
+
+    /**
+     * ★★★ <b>本局「援军」的状态机</b>（1.1.0，{@code policy/ReinforcementMemory}）。
+     *
+     * <p>★ 与 {@link #castMemory()} 同一形状：**每局一个实例** ⇒ 新的一局两方都回到
+     * 「对战开始时…记录你使用的下一张牌」的初始状态（卡面原文）。
+     * 写点只有 {@code game/CardCastListener}（成功施放记下一张；打出援军时取走并重新开始）。
+     */
+    public io.mczju.infernalclash.policy.ReinforcementMemory reinforcementMemory() {
+        return reinforcementMemory;
     }
 
     /** 战斗开始以来的 tick（★ 冷却时钟；见 {@link #cooldowns()}）。 */

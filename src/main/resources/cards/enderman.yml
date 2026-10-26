@@ -5,11 +5,18 @@ flavor: "它不搬东西，也不挪窝。"
 description:
   - "<gray>召唤一只末影人（原版 <white>40</white> 血）。"
   - "<gray>它免疫远程伤害，且被禁止传送。"
+  - "<gray>每当周围 <white>8</white> 格内的敌人数量由 <white>0</white> 变为 <white>1</white> 时，"
+  - "<gray>锁定该敌人，并<white>瞬移</white>到它的位置。"
 icon: ENDER_PEARL
 cost: 4
 cooldown-ticks: 400
 rarity: COMMON
 
+# ★ 1.1.0 平衡调整（docs/1.1卡牌.txt）：「墨影窃贼：增加能力：每当其周围半径8格范围内的
+#   敌人数量由0变为1时，锁定该敌人，并瞬移置该敌人的位置」
+#   ★ 落点 = `summon.shadow-step: 8`（执行层 battle/ShadowStepService）。
+#   ★ 与「禁止传送」共存：我们自己的那一次瞬移由一次性放行令牌穿透拦截
+#     （SummonTraitListener#allowNextTeleport）。
 summon:
   group:
     - entity: ENDERMAN
@@ -17,3 +24,4 @@ summon:
       offset: { forward: 0, right: 0 }
   placement: GROUND_OR_SELF
   taunt: false
+  shadow-step: 8

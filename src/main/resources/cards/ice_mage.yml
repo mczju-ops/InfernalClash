@@ -18,6 +18,10 @@ summon:
   placement: GROUND_OR_SELF
   taunt: false
   block-ranged: true
+  attributes:
+    # ★ 1.1.0 平衡调整（docs/1.1卡牌.txt）：「冰术师生命值改为26血（不能被火球砸死）」
+    #   原为原版流浪者 20 血；火球术 24 点 ⇒ 26 血正好活下来
+    health: 26
   equipment:
     helmet: LEATHER_HELMET
     chestplate: LEATHER_CHESTPLATE

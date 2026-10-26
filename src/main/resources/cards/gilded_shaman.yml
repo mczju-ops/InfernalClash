@@ -1,0 +1,41 @@
+id: gilded_shaman
+type: SUMMON
+display-name: "<red>赤金萨满"
+flavor: "这位猪灵萨满在猪灵中的声望极高，要是惹了它别想有什么好下场，至少你再也别想从猪灵这里得到珍珠了"
+description:
+  - "<gray>召唤一只<white>猪灵蛮兵</white>，它在死亡时会释放一次<white>嗜血</white>。"
+icon: GILDED_BLACKSTONE
+cost: 4
+cooldown-ticks: 500
+rarity: LEGENDARY
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：传说 赤金萨满 4 费 25s
+#   技术细节（逐字）：「『释放嗜血』即在猪灵蛮兵死亡时所在格复用一次『嗜血』卡牌的效果，
+#   不消耗费用。这只猪灵蛮兵穿着不提供防御属性的全套猪鼻饰纹金盔甲」
+#   ★ 复用 = 嵌套施放 `CAST_SPELL: bloodlust`（与怨恨轰炸机的亡语爆破同一条通道），
+#     落点 `at: IMPACT` = 死亡所在格；★ 深防 1 层（【Q26】）
+#   ★ 全套金甲 + SNOUT（猪鼻）纹饰；「不提供防御」由 EquipmentApplier 统一清 ATTRIBUTE_MODIFIERS。
+summon:
+  group:
+    - entity: PIGLIN_BRUTE
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  equipment:
+    helmet: GOLDEN_HELMET
+    chestplate: GOLDEN_CHESTPLATE
+    leggings: GOLDEN_LEGGINGS
+    boots: GOLDEN_BOOTS
+    trim:
+      helmet: { material: GOLD, pattern: SNOUT }
+      chestplate: { material: GOLD, pattern: SNOUT }
+      leggings: { material: GOLD, pattern: SNOUT }
+      boots: { material: GOLD, pattern: SNOUT }
+  abilities:
+    - id: deathrattle_cast_spell
+      trigger: ON_DEATH
+      effects:
+        - type: CAST_SPELL
+          spell: bloodlust
+          at: IMPACT

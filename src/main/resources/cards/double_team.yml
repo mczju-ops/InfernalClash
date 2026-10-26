@@ -6,8 +6,10 @@ description:
   - "<gray>一次召唤 <white>2</white> 只猪灵蛮兵，它们用斧头近战。"
 icon: ARMOR_STAND
 cost: 6
-cooldown-ticks: 200
+cooldown-ticks: 500
 rarity: EPIC
+
+# ★ 1.1.0 平衡调整（docs/1.1卡牌.txt）：「双打组合冷却时间增加到25s」（原 10 秒 = 200 tick）
 
 summon:
   group:

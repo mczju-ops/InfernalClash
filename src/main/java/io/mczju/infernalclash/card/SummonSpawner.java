@@ -57,6 +57,21 @@ public final class SummonSpawner {
     }
 
     /**
+     * ★★ <b>本对局的归属账本</b>（1.1.0 新增，给 {@code spell/EffectApplier} 用）。
+     *
+     * <p>为什么需要暴露它：1.1.0 的「地壳震击」要判**目标是不是建筑**
+     * （防御塔 / 信标 / 6 张打了 {@code building} 的召唤卡），而那个标记在实体 PDC 上、
+     * 只有 {@link UnitRegistry#building(Entity)} 读得到；「凋灵领域」还要按账本**每拍重新收集**
+     * 范围内的敌人（这样施放后才走进来的也挨打）。两者都需要账本
+     * ⇒ 由已经全局安装的 {@code SummonSpawner} 转手给出，**不新增第二个静态入口**。
+     *
+     * @return 账本（本类构造时必传，不会为 null）
+     */
+    public UnitRegistry registry() {
+        return registry;
+    }
+
+    /**
      * 在落点召唤这张卡的全部组。
      *
      * @param center 召唤**落点**（由 {@code PlacementResolver} 判定后的那一格）
@@ -72,7 +87,13 @@ public final class SummonSpawner {
      * 钩子为空时**只是没有能力**，召唤本身照常工作。
      */
     public interface SpawnHook {
-        void afterSpawn(Entity entity, Card card, String matchId, Side side, java.util.UUID owner);
+        /**
+         * @param extraAbilities ★★ 1.1.0：**这个组**独有的能力（{@code group[].abilities}）——
+         *        与卡级 {@code summon.abilities} 合并后才是它真正该有的能力清单。
+         *        ★ 为什么必须从生成层传下去：能力运行时只拿到实体与卡，**分不清它属于哪一组**。
+         */
+        void afterSpawn(Entity entity, Card card, String matchId, Side side, java.util.UUID owner,
+                        java.util.List<Card.Ability> extraAbilities);
     }
 
     private SpawnHook spawnHook;
@@ -200,7 +221,10 @@ public final class SummonSpawner {
                     //   ⇒ 用户看到的「刚召出来会锁玩家」正是它（他观测到 0.5~1s，与此吻合）。
                     //   ⇒ 现在的顺序：**登记 → 关掉原版会惹事的两个开关 → 属性 → 名牌 → 装备 → 能力**。
                     registry.tag(entity, new OwnershipTable.Owner(matchId, side, owner),
-                            card.summon().taunt(), card.id(), card.summon().building());
+                            card.summon().taunt(), card.id(),
+                            // ★★★ 1.1.0（巫术壁垒）：「**只有史莱**被算作建筑」⇒ 组级覆盖卡级。
+                            //   没写的组一律跟随卡级（其余 62 张卡行为一字未变）。
+                            group.buildingOr(card.summon().building()));
                     // ★ 同一个缺陷的**第二道**：把「会自己捡东西 / 会自然消失」关掉。
                     //   ① `setCanPickupItems(false)`：否则它会捡走地上的装备/掉落物
                     //      （`docs/19` #18 末影人那条「必做 setCanPickupItems(false)」是同一个理由）；
@@ -269,11 +293,22 @@ public final class SummonSpawner {
                     if (entity instanceof LivingEntity living) {
                         EquipmentApplier.equip(living, card.summon().equipment(), logger);
                     }
+                    // ★★★ 1.1.0（机动核弹）：「召唤一只**闪电**苦力怕」⇒ 上电。
+                    //   ★ 只对苦力怕生效；别的实体写了这一格只告警一次（配置写错不该让召唤物消失）。
+                    applyPowered(entity, card, side);
+                    // ★★★ 1.1.0（远古监视者）：「会浮在距离地面 **1** 格的位置」
+                    //   ⇒ 关重力 + 抬高。★ 抬高放在装备之后：装备不受位置影响。
+                    applyHover(entity, card, side);
+                    // ★★★ 1.1.0（远古监视者）：「这 4 秒内没有 ai，但是会**播放蓄力的音效**」
+                    //   ⇒ 部署期每 1 秒响一次；"这 4 秒内不能打人"由
+                    //     `battle/RayAttackService` 按同一份 `summon.deploy` 拦（同一来源）。
+                    applyDeploy(entity, card, side, tasks);
                     // ★ P6b：能力（ON_SUMMON 立刻施加、PERIODIC 起周期任务）——
                     //   放在**登记之后**：能力的效果可能要打自己/查归属，先登记才看得见它
                     if (spawnHook != null) {
                         try {
-                            spawnHook.afterSpawn(entity, card, matchId, side, owner);
+                            spawnHook.afterSpawn(entity, card, matchId, side, owner,
+                                    group.abilities());
                         } catch (Throwable t) {
                             logger.warning("[IC] 能力接线回调失败（卡 " + card.id() + "）：" + t);
                         }
@@ -774,6 +809,119 @@ public final class SummonSpawner {
             logger.warning("[IC] 涂蜡失败（卡 " + card.id() + "）：" + t
                     + "，只跳过涂蜡，单位照常存在（它只是会随时间氧化）");
         }
+    }
+
+    /**
+     * ★★★ <b>「闪电苦力怕」</b>（1.1.0 机动核弹，{@code summon.powered}）。
+     *
+     * <p>出处（{@code docs/1.1卡牌.txt}）：「召唤一只<b>闪电苦力怕</b>，且召唤时其获得 5s 抗性提升 V」。
+     * 后半句由卡里的 {@code abilities}（{@code ON_SUMMON} ＋ {@code POTION RESISTANCE}）承担，
+     * 本方法只负责"上电"。
+     *
+     * <p>★ 失败方向：实体不是苦力怕 ⇒ <b>只告警</b>（配置写错不该让召唤物消失）；
+     * {@code setPowered} 抛异常同理。
+     */
+    private void applyPowered(Entity entity, Card card, Side side) {
+        if (card == null || card.summon() == null || !card.summon().extra().powered()) {
+            return;
+        }
+        if (!(entity instanceof org.bukkit.entity.Creeper creeper)) {
+            logger.warning("[IC] 卡 " + card.id() + " 写了 powered: true，但这一组召唤出来的是 "
+                    + entity.getType() + "（不是苦力怕），跳过上电");
+            return;
+        }
+        try {
+            creeper.setPowered(true);
+            logger.info("[IC] 已上电（闪电苦力怕）：" + entity.getType() + "（卡 " + card.id()
+                    + "，阵营 " + side + "）");
+        } catch (Throwable t) {
+            logger.warning("[IC] 给苦力怕上电失败（卡 " + card.id() + "）：" + t
+                    + "，它会以普通苦力怕登场");
+        }
+    }
+
+    /**
+     * ★★★ <b>悬浮</b>（1.1.0 远古监视者，{@code summon.hover}）。
+     *
+     * <p>出处（{@code docs/1.1卡牌.txt}）：「召唤的远古守卫者会<b>浮在距离地面 1 格的位置</b>，
+     * 且<b>不会因为在空气中而窒息</b>」。前半句 = 关重力 ＋ 抬高；后半句由卡里的
+     * {@code POTION WATER_BREATHING} 承担（不写死在代码里，卡可以自己决定）。
+     *
+     * <p>★ 为什么必须关重力：只抬高 1 格的话，下一 tick 它就掉回地面 ——
+     * 玩家看到的会是"抖一下"而不是"浮着"。
+     * ★ 失败只告警：浮不起来只会让它贴地（能打、能被打），不影响对局。
+     */
+    private void applyHover(Entity entity, Card card, Side side) {
+        if (card == null || card.summon() == null || card.summon().extra().hover() == null) {
+            return;
+        }
+        double hover = card.summon().extra().hover();
+        if (!(entity instanceof org.bukkit.entity.LivingEntity living)
+                || entity.getWorld() == null) {
+            logger.warning("[IC] 卡 " + card.id() + " 写了 hover，但这一组不是生物（"
+                    + entity.getType() + "），跳过悬浮");
+            return;
+        }
+        try {
+            living.setGravity(false);
+            org.bukkit.Location from = living.getLocation();
+            living.teleport(from.clone().add(0.0, hover, 0.0));
+            logger.info("[IC] 已悬浮 " + hover + " 格：" + entity.getType() + "（卡 " + card.id()
+                    + "，阵营 " + side + "）");
+        } catch (Throwable t) {
+            logger.warning("[IC] 悬浮失败（卡 " + card.id() + "）：" + t + "，它会贴地登场");
+        }
+    }
+
+    /**
+     * ★★★ <b>部署期</b>（1.1.0 远古监视者，{@code summon.deploy}）。
+     *
+     * <p>出处（{@code docs/1.1卡牌.txt}）：「该单位放置后需要 <b>4 秒</b>时间部署，
+     * 这 4 秒内<b>没有 ai</b>，但是会<b>播放蓄力的音效</b>」。
+     *
+     * <h2>拆成两半，两半读同一份配置</h2>
+     * <ol>
+     *   <li><b>音效</b>（本方法）：每 {@link Card.Summon.Deploy#SOUND_PERIOD_TICKS} tick 播一次，
+     *       共播 {@code ticks / PERIOD} 次（4 秒 ⇒ 4 次）。任务登记在**本局**
+     *       {@link LifecycleTasks} 上（没有任务表 ⇒ 只告警，绝不挂在无人回收的地方）；</li>
+     *   <li><b>不能攻击</b>：{@code battle/RayAttackService} 读同一份
+     *       {@code summon.deploy} ⇒ 部署期结束前不发射线（判据只有一处）。</li>
+     * </ol>
+     * ★ "没有 ai" 由卡上的 {@code stationary: true} 承担（部署完成后也不需要走动 ——
+     * 远古监视者是建筑）。★ 失败只告警：听不到蓄力声不影响它 4 秒后能不能开火。
+     */
+    private void applyDeploy(Entity entity, Card card, Side side, LifecycleTasks tasks) {
+        if (card == null || card.summon() == null || card.summon().extra().deploy() == null) {
+            return;
+        }
+        Card.Summon.Deploy deploy = card.summon().extra().deploy();
+        if (!deploy.hasSound()) {
+            return;
+        }
+        if (tasks == null) {
+            logger.warning("[IC] 卡 " + card.id() + " 写了 deploy.sound，但没有可用的生命周期任务表"
+                    + "（探针路径？）⇒ 不播蓄力音效（部署期本身仍由射线执行层拦）");
+            return;
+        }
+        int period = Card.Summon.Deploy.SOUND_PERIOD_TICKS;
+        int beats = Math.max(1, deploy.ticks() / period);
+        for (int i = 0; i < beats; i++) {
+            final int beat = i + 1;
+            tasks.runLater(plugin, () -> {
+                try {
+                    if (entity instanceof org.bukkit.entity.LivingEntity living
+                            && living.isValid() && !living.isDead()) {
+                        living.getWorld().playSound(living.getLocation(), deploy.sound(), 1.0f, 1.0f);
+                    }
+                } catch (Throwable t) {
+                    logger.warning("[IC] 蓄力音效播放失败（卡 " + card.id() + "，第 " + beat
+                            + " 拍，只影响观感）：" + t);
+                }
+            }, (long) beat * period);
+        }
+        logger.info("[IC] 部署期开始：" + entity.getType() + "（卡 " + card.id() + "）—— "
+                + deploy.ticks() + " tick 内不能攻击，蓄力音效 " + beats + " 拍（每 "
+                + period + " tick 一拍）");
     }
 
     /**

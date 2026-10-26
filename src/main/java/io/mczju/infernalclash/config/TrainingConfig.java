@@ -190,7 +190,13 @@ public record TrainingConfig(List<BotSpec> bots, Map<String, BotSpellRule> spell
      * ★ 卡名硬编码在这里是**照用户原话**（用户就是按卡名点的）；改名时
      * {@code TrainingDeckCrossCheckTest} 会红（它断言这三个 id 都在出厂卡池里）。
      */
-    public static final List<String> BOT_FORBIDDEN_CARDS = List.of("speed_potion", "tactical_cooldown", "echo");
+    //  ★★★ 1.1.0：新增 **援军**（`reinforcement`）—— 理由与「回响」完全同构：
+    //   它的语义是「重置**本局记录到的下一张牌**的冷却」，而那套状态挂在**玩家施放入口**
+    //   （`game/CardCastListener#castReinforcement`）⇒ 人机不走那条入口，
+    //   永远没有记录 ⇒ 永远打不出去。放进卡组只会让那 8 格里有一格永远空转。
+    //   ★ 同一批的其它三张新法术（地壳震击 / 凋灵领域 / 大旋风）都在 `training.spell-rules` 里。
+    public static final List<String> BOT_FORBIDDEN_CARDS =
+            List.of("speed_potion", "tactical_cooldown", "echo", "reinforcement");
 
     /** {@code training} 段允许出现的全部键（★ 多一个都拒绝：拼错的键被静默忽略 = 「配置写了却没生效」）。 */
     private static final List<String> TRAINING_KEYS =

@@ -19,7 +19,9 @@ summon:
   taunt: false
   stop-when-target-within: 8
   attributes:
-    health: 40.0
+    # ★ 1.1.0 平衡调整（docs/1.1卡牌.txt）：「亡灵契约师改为24血（能被火球砸死）」
+    #   原 40 血；火球术 24 点 ⇒ 正好一击必杀
+    health: 24.0
   equipment:
     helmet: LEATHER_HELMET
     chestplate: LEATHER_CHESTPLATE

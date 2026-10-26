@@ -1,0 +1,57 @@
+id: ancient_watcher
+type: SUMMON
+display-name: "<light_purple>远古监视者"
+flavor: "虽然他是一名拥有夸张射程的远程单位，但他并不是臭中杯。"
+description:
+  - "<gray><white>建筑</white>"
+  - "<gray>召唤一名远古守卫者，他在完成<white>蓄力</white>后能锁定全图的目标进行攻击，可存在 <white>25</white> 秒。"
+  - "<gray>放置后需要 <white>4</white> 秒部署，这 4 秒内没有 AI，但会播放蓄力的音效。"
+icon: PRISMARINE_CRYSTALS
+cost: 6
+cooldown-ticks: 800
+rarity: EPIC
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：史诗 远古监视者 6 费 40s 建筑
+#   技术细节（逐字）：「使用劲弩手同款虚拟子弹，每0.5秒造成4点伤害…该单位放置后需要4秒时间
+#   部署，这4秒内没有ai，但是会播放蓄力的音效。部署完成后会锁定64格内最近的敌方单位持续攻击，
+#   直到该单位死亡或自身被眩晕才会切换目标。召唤的远古守卫者会浮在距离地面1格的位置，
+#   且不会因为在空气中而窒息」
+#   ★ 逐格落点：ray（射线）＝ 4 点 / 10 tick / 射程 64；deploy（4 秒部署期）；
+#     hover（浮空 1 格）；targeting LOCK_ON + target-radius 64（锁定最近 64 格）；
+#     WATER_BREATHING（"不会在空气中窒息"）。
+#   ★ 血量用户没给 ⇒ 用原版远古守卫者（80），没有发明数值。
+summon:
+  group:
+    - entity: ELDER_GUARDIAN
+      count: 1
+      offset: { forward: 0, right: 0 }
+      # 「可存在 25 秒」⇒ 500 tick 后自行消失（任务登记在本局 LifecycleTasks 上）
+      lifetime-ticks: 500
+  placement: GROUND_OR_SELF
+  taunt: false
+  building: true
+  # 「4 秒内没有 ai」+ 建筑不该走动 ⇒ 站桩
+  stationary: true
+  # 「锁定 64 格内最近的敌方单位…直到目标死亡或自身被眩晕才会切换」
+  targeting: LOCK_ON
+  target-radius: 64
+  # 「浮在距离地面 1 格的位置」
+  hover: 1.0
+  # 部署期：4 秒 = 80 tick；蓄力音效每 1 秒一拍（共 4 拍）
+  deploy:
+    ticks: 80
+    sound: entity.guardian.attack
+  ray:
+    damage: 4
+    interval-ticks: 10
+    particle: END_ROD
+    range: 64
+  abilities:
+    # 「不会因为在空气中而窒息」＝ 无限水下呼吸（原版守卫者是水生生物）
+    - id: resistance_on_summon
+      trigger: ON_SUMMON
+      effects:
+        - type: POTION
+          effect: WATER_BREATHING
+          amplifier: 0
+          duration-ticks: 72000

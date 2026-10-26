@@ -6,7 +6,7 @@
 
     <groupId>io.mczju</groupId>
     <artifactId>InfernalClash</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
     <name>InfernalClash</name>
     <description>InfernalClash（代理人战争）— Paper 26.2 / MCZJUGameCore 子插件：1v1 实时卡牌策略对战</description>

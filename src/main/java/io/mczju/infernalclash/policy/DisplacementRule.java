@@ -60,6 +60,33 @@ public final class DisplacementRule {
         return !canDisplace(knockbackResistance);
     }
 
+    /**
+     * ★★★ <b>「狂风推进」能不能推动它</b>（1.1.0 的收紧口径）。
+     *
+     * <h2>出处（{@code docs/1.1卡牌.txt}，逐字）</h2>
+     * 「<b>狂风推进不再影响带有击退抗性的召唤物。</b>」
+     *
+     * <h2>与 {@link #canDisplace} 的差别（★ 只对 PUSH 收紧，其它位移一字不动）</h2>
+     * <ul>
+     *   <li>{@link #canDisplace}：只有击退抗性<b>满 1.0</b> 才算免疫 —— 这是「击退 / 持续推动」
+     *       两条共用的老口径，目标物（塔 / 信标）靠它挡风；</li>
+     *   <li>本方法：<b>只要带了击退抗性（{@code > 0}）就不推</b> —— 用户 1.1.0 的新口径，
+     *       于是 0.8 的铁甲战士、以及 1.1.0 起拿到 +1 点击退抗性的「优先攻击建筑」单位
+     *       都不会被风墙推着走。</li>
+     * </ul>
+     * ★ 为什么不用一个新常量把两条都改掉：那样「火球击退」也会跟着失效
+     * （用户只点了狂风推进），而 0.8 抗性的铁甲战士被火球推开**本来就是预期**。
+     *
+     * @param knockbackResistance 目标当前的 {@code KNOCKBACK_RESISTANCE}（含修饰符）
+     * @return {@code true} = 可以被狂风推进推走；{@code false} = 不推
+     */
+    public static boolean pushable(double knockbackResistance) {
+        if (Double.isNaN(knockbackResistance)) {
+            return true;   // 读不到 ⇒ 按能推（失败方向 = 照常生效）
+        }
+        return knockbackResistance <= EPSILON;
+    }
+
     /** 一行说明（日志用）。 */
     public static String describe(double knockbackResistance) {
         return immune(knockbackResistance)

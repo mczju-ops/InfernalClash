@@ -8,7 +8,7 @@ cards:
     flavor: "新款MK II超精简版悦灵经验机，删掉了召唤蠹虫的部分"
     description:
       - "<gray><white>建筑</white>"
-      - "<gray>召唤一只悦灵，它只会停留<white>40</white> 秒。"
+      - "<gray>召唤一只体型巨大的悦灵（<white>×4</white>），它只会停留<white>40</white> 秒。"
       - "<gray>每 <white>5</white> 秒为召唤者提供 <white>1</white> 级经验。"
 
   # <white>万箭齐发｜SPELL｜BASIC｜3 费｜200 tick
@@ -24,7 +24,7 @@ cards:
     flavor: "Hello，hello~"
     description:
       - "<gray>召唤一只美西螈。"
-      - "<gray>它第一次被击倒时会假死并<white>满血</white>复活。"
+      - "<gray>它第一次被击倒时会假死并<white>满血</white>复活（伴随不灭图腾的光与声）。"
 
   # <light_purple>烈焰熔炉｜SUMMON｜EPIC｜4 费｜600 tick
   blaze_furnace:
@@ -65,7 +65,9 @@ cards:
     display-name: "<green>劲弩手"
     flavor: "世界上最通透的弩手，最近沉迷于玄武岩三角洲行动。"
     description:
-      - "<gray>召唤一名手持<white>力量 V</white>、<white>穿透 IV</white>、<white>快速装填 III</white> 的弩的劫掠者。"
+      - "<gray>召唤一名手持弩的劫掠者。"
+      - "<gray>它<white>不再射箭</white>，而是每 <white>0.5</white> 秒打出一道<white>穿透射线</white>，"
+      - "<gray>对穿过的每个敌人造成 <white>2</white> 点伤害（<white>8</white> 格内）。"
 
   # <blue>前储君｜SUMMON｜RARE｜5 费｜400 tick
   crown_prince:
@@ -87,7 +89,8 @@ cards:
     display-name: "<blue>沙漠小队"
     flavor: "尸壳和焦骸天天许愿它们的骆驼变成骆驼娘，现在愿望成真了。"
     description:
-      - "<gray>生成一只尸壳和两只焦骸。"
+      - "<gray>生成一只手持铁剑、身穿铁套的尸壳，和两只焦骸。"
+      - "<gray>焦骸会用<white>穿透射线</white>远程攻击。"
 
   # <light_purple>双打组合｜SUMMON｜EPIC｜6 费｜200 tick
   double_team:
@@ -109,6 +112,8 @@ cards:
     flavor: "爱吃西瓜和炸鸡，遵纪守法的大高个。"
     description:
       - "<gray>召唤一只末影人。"
+      - "<gray>每当周围 <white>8</white> 格内的敌人数量由 <white>0</white> 变为 <white>1</white> 时，"
+      - "<gray>锁定该敌人，并<white>瞬移</white>到它的位置。"
 
   # <blue>虫群｜SUMMON｜RARE｜3 费｜400 tick
   endermite_swarm:
@@ -137,7 +142,7 @@ cards:
     flavor: "在这站一会我们俩就是熟人了"
     description:
       - "<gray>朝落点方向扇出半径 <white>8</white> 格、张角 <white>120°</white> 的火焰扇面。"
-      - "<gray>范围内敌人各受 <white>12</white> 点伤害，并被点燃 <white>3</white> 秒。"
+      - "<gray>范围内敌人各受 <white>16</white> 点伤害，并被点燃 <white>20</white> 秒（合计 <white>36</white> 点）。"
 
   # <light_purple>灵狐引路｜SPELL｜EPIC｜3 费｜200 tick
   fox_guide:
@@ -162,6 +167,7 @@ cards:
     description:
       - "<gray>沿你的面朝方向刮出一道宽 <white>3</white> 格、长 <white>8</white> 格的风墙，持续 <white>3</white> 秒。"
       - "<gray>范围内的敌人被持续推向该方向，并每秒受到 <white>4</white> 点伤害。"
+      - "<gray>带有<white>击退抗性</white>的召唤物不受影响。"
 
   # <light_purple>金牌药剂师｜SUMMON｜EPIC｜3 费｜400 tick
   gold_apothecary:
@@ -197,7 +203,7 @@ cards:
     display-name: "<red>冰术师"
     flavor: "发光鱿鱼，我从地狱归来了！。"
     description:
-      - "<gray>召唤一只流浪者。"
+      - "<gray>召唤一只 <white>26</white> 血的流浪者。"
       - "<gray>每 <white>2</white> 秒对目标及其周围 <white>1</white> 格内的敌人造成 <white>4</white> 点范围伤害，并施加<white>缓慢 II</white>。"
 
   # <green>冰晶坠｜SPELL｜COMMON｜2 费｜200 tick
@@ -236,19 +242,19 @@ cards:
     description:
       - "<gray>召唤一名卫道士。"
 
-  # <green>熔岩精灵｜SUMMON｜COMMON｜1 费｜200 tick
+  # <green>熔岩精灵｜SUMMON｜COMMON｜0 费｜100 tick
   lava_sprite:
     display-name: "<green>熔岩精灵"
     flavor: "小心烫嘴。"
     description:
-      - "<gray>召唤三只<white>小型</white>岩浆怪。"
+      - "<gray>召唤一只<white>小型</white>岩浆怪。"
 
   # <green>死灵法师｜SUMMON｜COMMON｜5 费｜400 tick
   necromancer:
     display-name: "<green>亡灵契约师"
     flavor: "再等个几天也行。"
     description:
-      - "<gray>召唤一名僵尸。"
+      - "<gray>召唤一名 <white>24</white> 血的亡灵契约师。"
       - "<gray>每 <white>3</white> 秒，对 <white>8</white> 格内的目标释放一次火球术。"
 
   # <red>信息素｜SPELL｜LEGENDARY｜5 费｜600 tick
@@ -271,7 +277,8 @@ cards:
     display-name: "<white>静默猎手"
     flavor: "转来转去像个小丑。"
     description:
-      - "<gray>召唤一名手持力量 V 弓的骷髅。"
+      - "<gray>召唤一名手持长弓的骷髅，它<white>不再射箭</white>。"
+      - "<gray>每 <white>0.5</white> 秒打出一道<white>穿透射线</white>，对穿过的每个敌人造成 <white>2</white> 点伤害（<white>8</white> 格内）。"
 
   # <light_purple>劫掠堡垒｜SUMMON｜EPIC｜8 费｜800 tick
   ravager_fortress:
@@ -289,14 +296,15 @@ cards:
       - "<gray>召唤一只孱弱的骷髅。"
       - "<gray>这只骷髅死亡时会立刻<white>刷新本卡的冷却</white>。"
 
-  # <red>海王｜SUMMON｜LEGENDARY｜4 费｜200 tick
+  # <red>海王｜SUMMON｜LEGENDARY｜4 费｜500 tick
   sea_king:
     display-name: "<red>海王"
     flavor: "掌握了雷霆之力的溺尸，正在追捕一名大量走私金蒲公英的家伙。"
     description:
-      - "<gray>召唤一只手持三叉戟的溺尸。"
+      - "<gray>召唤一只手持三叉戟的溺尸（<white>20</white> 血）。"
       - "<gray>登场时眩晕自身 <white>2</white> 格半径内的所有敌人，并对其造成 <white>8</white> 点伤害。"
-      - "<gray>攻击命中时眩晕该目标 <white>1</white> 秒。"
+      - "<gray>之后每 <white>1</white> 秒对目标造成 <white>8</white> 点伤害并眩晕 <white>1</white> 秒，同时落下一道闪电。"
+      - "<gray>对<white>海龟</white>额外造成 <white>1000</white> 点伤害（还原原版雷暴特性）。"
 
   # <white>哨位｜SUMMON｜BASIC｜3 费｜200 tick
   sentry:
@@ -321,12 +329,12 @@ cards:
     description:
       - "<gray>自身在 <white>20</white> 秒内获得<white>速度 V</white>。"
 
-  # <white>灵狐刺客｜SUMMON｜BASIC｜1 费｜200 tick
+  # <white>灵狐刺客｜SUMMON｜BASIC｜1 费｜100 tick
   spirit_fox_assassin:
     display-name: "<white>灵狐刺客"
     flavor: "它仍期待着将口中的武器递给主人的那一刻。"
     description:
-      - "<gray>召唤一只嘴里叼着钻石剑的狐狸刺客。"
+      - "<gray>召唤 <white>3</white> 只嘴里叼着钻石剑的狐狸刺客。"
 
   # <red>蒸汽精灵｜SUMMON｜LEGENDARY｜3 费｜400 tick
   steam_sprite:
@@ -364,7 +372,9 @@ cards:
     flavor: "千万别惹恼他，除非你希望你的节肢杀手剑在你睡觉时能派上用场。"
     description:
       - "<gray>召唤一只焦骸。"
-      - "<gray>每 <white>5</white> 秒在自身周围召唤 <white>2</white> 只蠹虫。"
+      - "<gray>每 <white>2</white> 秒在自身周围召唤 <white>1</white> 只蠹虫。"
+      - "<gray>它手持长弓却<white>不再射箭</white>：每 <white>0.5</white> 秒打出一道<white>穿透射线</white>，"
+      - "<gray>对穿过的每个敌人造成 <white>2</white> 点伤害（<white>8</white> 格内）。"
 
   # <white>利剑嗡嗡｜SUMMON｜BASIC｜2 费｜200 tick
   sword_buzz:
@@ -387,3 +397,102 @@ cards:
     description:
       - "<gray>召唤一只生命 <white>10</white> 的苦力怕。"
       - "<gray>它登场时永久获得<white>速度 II</white>。"
+
+  # ==================================================================================
+  # ★★★ 1.1.0（2026-10-26）新增的 12 张卡 —— 文案全部照抄 docs/1.1卡牌.txt
+  #   （括号里那几句 = flavor；「技术细节」不进卡面）
+  # ==================================================================================
+
+  # <green>虫群之母｜SUMMON｜COMMON｜4 费｜400 tick
+  brood_mother:
+    display-name: "<green>虫群之母"
+    flavor: "这种末影螨巨大的肚子里可能不止装了它的孩子，还有它配偶的遗骸。"
+    description:
+      - "<gray>召唤一只体型巨大的末影螨，它在死后会分裂出 <white>8</white> 只小末影螨。"
+      - "<gray>优先攻击建筑。"
+
+  # <green>囚笼编织者｜SUMMON｜COMMON｜3 费｜400 tick
+  cage_weaver:
+    display-name: "<green>囚笼编织者"
+    flavor: "它在直播时也很擅长编织弹幕。"
+    description:
+      - "<gray>召唤一只蜘蛛，该蜘蛛会在攻击目标处结网，网会存在 <white>8</white> 秒。"
+
+  # <green>援军｜SPELL｜COMMON｜1 费｜600 tick
+  reinforcement:
+    display-name: "<green>援军"
+    flavor: "半个蛋，你去兵分四路包围敌人。"
+    description:
+      - "<gray>在对战开始时，以及使用本卡牌后，记录你使用的下一张牌。"
+      - "<gray>使用时，重置记录的卡牌的冷却时间，然后清空记录。"
+
+  # <blue>巫术壁垒｜SUMMON｜RARE｜7 费｜800 tick
+  witch_bulwark:
+    display-name: "<blue>巫术壁垒"
+    flavor: "现在她总是被人嘲笑为软脚术师。"
+    description:
+      - "<gray><white>建筑</white>"
+      - "<gray>召唤一个骑乘着史莱姆的亡灵契约师，可存在 <white>40</white> 秒。"
+
+  # <blue>淤泥之王｜SUMMON｜RARE｜5 费｜600 tick
+  sludge_king:
+    display-name: "<blue>淤泥之王"
+    flavor: "它那些琳琅满目，黏糊糊的收藏品正是它称王的资本"
+    description:
+      - "<gray><white>建筑</white>"
+      - "<gray>召唤一只巨大的史莱姆，每 <white>5</white> 秒召唤一名沼泽游击队队员，"
+      - "<gray>死亡时还会再召唤 <white>2</white> 名，可存在 <white>30</white> 秒。"
+
+  # <blue>地壳震击｜SPELL｜RARE｜3 费｜400 tick
+  crust_quake:
+    display-name: "<blue>地壳震击"
+    flavor: "其实只是你的上铺室友翻了个身"
+    description:
+      - "<gray>对 <white>5</white> 格范围内的目标造成 <white>15</white> 点伤害，"
+      - "<gray>对建筑造成<white>双倍</white>伤害。"
+
+  # <light_purple>远古监视者｜SUMMON｜EPIC｜6 费｜800 tick
+  ancient_watcher:
+    display-name: "<light_purple>远古监视者"
+    flavor: "虽然他是一名拥有夸张射程的远程单位，但他并不是臭中杯。"
+    description:
+      - "<gray><white>建筑</white>"
+      - "<gray>召唤一名远古守卫者，他在完成蓄力后能锁定全图的目标进行攻击，可存在 <white>25</white> 秒。"
+
+  # <light_purple>机动核弹｜SUMMON｜EPIC｜5 费｜600 tick
+  mobile_nuke:
+    display-name: "<light_purple>机动核弹"
+    flavor: "那天海王和恐怖分子喝多了……"
+    description:
+      - "<gray>召唤一只闪电苦力怕，且召唤时其获得 <white>5</white> 秒抗性提升 V。"
+
+  # <light_purple>凋灵领域｜SPELL｜EPIC｜4 费｜400 tick
+  wither_domain:
+    display-name: "<light_purple>凋灵领域"
+    flavor: "难怪煤矿工人容易得肺病"
+    description:
+      - "<gray>持续 <white>8</white> 秒，每秒对半径 <white>5</white> 格范围内所有召唤物造成 <white>5</white> 点伤害。"
+
+  # <red>美愿轰炸机｜SUMMON｜LEGENDARY｜8 费｜800 tick
+  wish_bomber:
+    display-name: "<red>美愿轰炸机"
+    flavor: "怨恨和愤怒只会让魂变得脆弱，这只恶魂远比你想象的坚韧。"
+    description:
+      - "<gray>召唤一只快乐恶魂，死亡时返还 <white>3</white> 点经验值。"
+      - "<gray>优先攻击建筑。"
+
+  # <red>赤金萨满｜SUMMON｜LEGENDARY｜4 费｜500 tick
+  gilded_shaman:
+    display-name: "<red>赤金萨满"
+    flavor: "这位猪灵萨满在猪灵中的声望极高，要是惹了它别想有什么好下场，至少你再也别想从猪灵这里得到珍珠了"
+    description:
+      - "<gray>召唤一只猪灵蛮兵，它在死亡时会释放一次嗜血。"
+
+  # <red>大旋风｜SPELL｜LEGENDARY｜3 费｜600 tick
+  great_whirlwind:
+    display-name: "<red>大旋风"
+    flavor: "其实只是因为旋风中心有一只tosser和隐身词条的炒鸡猪。"
+    description:
+      - "<gray>将半径 <white>6</white> 格内的所有敌人向法术释放的位置牵引，"
+      - "<gray>每秒造成 <white>2</white> 点伤害，持续 <white>2</white> 秒。"
+

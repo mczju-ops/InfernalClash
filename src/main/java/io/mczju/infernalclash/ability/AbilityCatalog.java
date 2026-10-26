@@ -173,7 +173,22 @@ public final class AbilityCatalog {
                             + "「每 3s 在 8 格内目标处放一次火球术」—— 用户 2026-10-17 改成"
                             + "「20 点的火球，但攻击间隔变为原来的两倍」，本卡落的是"
                             + " cooldown-ticks: 120（6 秒）+ amount: 20 + projectile: FIREBALL"
-                            + "（火球只负责观感，伤害由 amount 结算）")
+                            + "（火球只负责观感，伤害由 amount 结算）"),
+            // ==================================================================================
+            // ★★★ 1.1.0（2026-10-26）新增的 2 条「玩法级 id」
+            //   出处全部来自 docs/1.1卡牌.txt（逐字），没有一条是我发明的。
+            // ==================================================================================
+            new Entry("web_on_attack", Card.Trigger.ON_ATTACK,
+                    "攻击命中时在**目标脚下**结一张蜘蛛网（effects: [{ type: PLACE_WEB,"
+                            + " duration-ticks: 160 }]）；出处 docs/1.1卡牌.txt 的"
+                            + "「囚笼编织者：该蜘蛛会在攻击目标处结网，网会存在 8 秒」。"
+                            + "★ 能不能替换那一格由纯类 policy/WebBlockRule 判（只碰空气与软方块），"
+                            + "生成/接管/还原在 spell/WebField"),
+            new Entry("deathrattle_grant_xp", Card.Trigger.ON_DEATH,
+                    "亡语 = 给**召唤者**加经验（effects: [{ type: GRANT_XP, amount: N }]）；"
+                            + "出处 docs/1.1卡牌.txt 的「美愿轰炸机：死亡时返还 3 点经验值」。"
+                            + "★ 目标与 gain_xp_periodically 同一条通道（GRANT_XP 打给召唤者，"
+                            + "不是打给尸体）—— 所以它不需要 radius / targets 这些作用面")
     );
 
     /** id → 注册项（**保序**：与 {@link #ENTRIES} 同序）。 */

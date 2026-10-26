@@ -1,0 +1,83 @@
+id: witch_bulwark
+type: SUMMON
+display-name: "<blue>巫术壁垒"
+flavor: "现在她总是被人嘲笑为软脚术师。"
+description:
+  - "<gray><white>建筑</white>"
+  - "<gray>召唤一个<white>骑乘着史莱姆的亡灵契约师</white>，可存在 <white>40</white> 秒。"
+icon: SLIME_SPAWN_EGG
+cost: 7
+cooldown-ticks: 800
+rarity: RARE
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：稀有 巫术壁垒 7 费 40s 建筑
+#   技术细节（逐字）：「召唤一个骑乘着史莱姆的亡灵契约师，可存在40秒…
+#   只有史莱被算作建筑，不能移动。史莱姆为大型，生命值为40，生成时带有凋零I效果，
+#   死亡后不会召唤小史莱姆；亡灵契约师与原卡牌数值完全一致」
+#   ★ 用户 2026-10-26 追问后的裁定：「不需要接管它们的生命周期：史莱姆会凋零死掉；
+#     亡灵契约师超过40秒只要没被击杀也会活下来继续战斗」
+#     ⇒ 两支都**不写 lifetime-ticks**：史莱姆靠凋零 I 自己死，骑手一直活到被打死。
+#   ★ 「只有史莱是建筑」用 `group[].building`（组级覆盖卡级）；
+#   ★ 两支能力完全不同（史莱姆只有凋零，骑手才会扔火球）⇒ 用 `group[].abilities`。
+summon:
+  group:
+    # ---- 载具：大型史莱姆（size 4 = 大型；40 血；登场带凋零 I；死亡不分裂）----
+    - entity: SLIME
+      count: 1
+      offset: { forward: 0, right: 0 }
+      building: true
+      attributes:
+        size: 4
+        health: 40
+      abilities:
+        - id: poison_on_summon
+          trigger: ON_SUMMON
+          effects:
+            - type: POTION
+              effect: WITHER
+              amplifier: 0
+              duration-ticks: 72000
+    # ---- 骑手：亡灵契约师（与原卡数值完全一致：24 血、每 3 秒一颗 20 点火球、进 8 格站定）----
+    #      ★ 24 血 = 1.1.0 平衡调整（能被火球砸死）
+    - entity: SKELETON
+      count: 1
+      offset: { forward: 0, right: 0 }
+      mount: SLIME
+      attributes:
+        health: 24
+      abilities:
+        - id: fireball_periodically
+          trigger: PERIODIC
+          cooldown-ticks: 60
+          center: NEAREST_ENEMY
+          search-radius: 8
+          radius: 2
+          targets: ENEMIES
+          include-self: false
+          fx:
+            particle: FLAME
+            sound: entity.blaze.shoot
+          effects:
+            - type: DAMAGE
+              amount: 20
+  placement: GROUND_OR_SELF
+  taunt: false
+  # 卡级 false：只有史莱姆那一组（组级 true）算建筑
+  building: false
+  # 「不能移动」：两组都站桩（载具的 MountDriveGoal 也因 AI 关闭而不会走）
+  stationary: true
+  # 骑手「进 8 格站定」＝ 原卡同一格（`stop-when-target-within: 8`）
+  stop-when-target-within: 8
+  equipment:
+    # 装备只给骑手（史莱姆不穿活灵契约师那套蓝皮革 + 金纹饰）
+    groups: [SKELETON]
+    helmet: LEATHER_HELMET
+    chestplate: LEATHER_CHESTPLATE
+    leggings: LEATHER_LEGGINGS
+    boots: LEATHER_BOOTS
+    color: BLUE
+    main-hand: WOODEN_HOE
+    trim:
+      helmet: { material: GOLD, pattern: DUNE }
+      chestplate: { material: GOLD, pattern: VEX }
+      leggings: { material: GOLD, pattern: COAST }

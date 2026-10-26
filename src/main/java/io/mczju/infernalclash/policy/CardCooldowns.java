@@ -145,6 +145,37 @@ public final class CardCooldowns {
         }
     }
 
+    /**
+     * ★★★ <b>立刻把一张卡的冷却清掉</b>（1.1.0「援军」的落点）。
+     *
+     * <h2>出处（{@code docs/1.1卡牌.txt}，逐字）</h2>
+     * 「使用时，<b>重置记录的卡牌的冷却时间</b>，然后清空记录」。
+     *
+     * <h2>为什么不能复用 {@link #cancel}</h2>
+     * 两者<b>此刻</b>的实现一样（都是删掉那一行），但**语义不同**：
+     * {@code cancel} 是"这次出牌失败、当作没发生"（配套退费），
+     * 本方法是"这次出牌成功，且它按规则让另一张牌立刻可用"。
+     * 若写成同一个方法，将来 {@code cancel} 加上"退费/计数"之类的副作用时，
+     * 援军会**静默**跟着变 —— 那正是本项目最反感的「一处语义被另一处借走」。
+     * ⇒ 两个入口、同一个存储操作，注释互相指认。
+     *
+     * @return 真的清掉了一条吗（没有那一条 ⇒ {@code false}，调用方可据此写日志）
+     */
+    public boolean reset(Side side, String cardId) {
+        if (side == null || cardId == null || cardId.isBlank()) {
+            return false;
+        }
+        Map<String, Integer> table = readyAt.get(side);
+        if (table == null || !table.containsKey(cardId)) {
+            return false;
+        }
+        table.remove(cardId);
+        if (table.isEmpty()) {
+            readyAt.remove(side);
+        }
+        return true;
+    }
+
     /** 清空（★ 正常情况下用不到 —— 新对局是新实例；留给 `/incl debug` 与测试）。 */
     public void clear() {
         readyAt.clear();

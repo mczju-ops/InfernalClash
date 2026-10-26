@@ -256,6 +256,15 @@ public final class SpellCaster {
         int appliedCount = 0;
         int skippedWithoutTarget = 0;
         for (Spell.Effect effect : spell.effects()) {
+            // ★★★ 1.1.0：**整场只跑一次**的效果（凋灵领域）先处理 —— 它既不是逐目标，
+            //   也不是"没目标才跑"（见 EffectScope#runsOncePerCast 的三档说明）。
+            if (EffectScope.runsOncePerCast(effect.type())) {
+                if (EffectApplier.apply(effect, context, standIn, origin,
+                        () -> applyNested(caster, matchId, side, effect, origin, depth))) {
+                    appliedCount++;
+                }
+                continue;
+            }
             if (targets.isEmpty()) {
                 // ★★★ 2026-10-17 第十轮修（缺陷 P1-a）：**只有不需要目标实体的效果**
                 //   才允许在「一个都没命中」时跑一次（召唤/嵌套/刷新冷却/给经验那几个，
@@ -402,7 +411,7 @@ public final class SpellCaster {
      * @param beat 第几次脉冲（0 = 第一次）—— 用来让土块**往上飘一点**，看起来像在掘
      */
     private void emitBlockFx(Spell.Fx fx, List<ShapeMath.Cell> cells, Location origin,
-                             String matchId, int beat) {
+                             String matchId, int beat, boolean allCells) {
         World world = origin.getWorld();
         if (world == null) {
             return;
@@ -424,9 +433,13 @@ public final class SpellCaster {
             return;
         }
         // 落点：有边界格就沿边界撒（能勾出范围）；没有就撒在落点本身
+        // ★★★ 1.1.0（地壳震击）：「**火焰粒子环 ＋ 在环内区域持续产生泥土破碎粒子**」——
+        //   同一张卡同时写了 `fx.particle` 与 `fx.block` 时，方块粒子改撒**整个区域**
+        //   （环交给 particle 那条路去画）。只写 `block` 的卡（掘墓者）仍是沿边界撒，
+        //   行为一字未变。
         List<ShapeMath.Cell> where = cells.isEmpty()
                 ? List.of(new ShapeMath.Cell(origin.getBlockX(), origin.getBlockZ()))
-                : FxRing.boundary(cells);
+                : (allCells ? cells : FxRing.boundary(cells));
         double y = origin.getBlockY() + 1.0 + (beat % 3) * 0.25;
         // ★★ 2026-10-19 用户裁定（逐字）：「掘墓人**粒子量翻倍**，**显示范围也要扩大一点**」
         //   ⇒ 每格 2 → **4** 颗；散布 0.35 → **0.6** 格（土块铺得更开）。
@@ -475,8 +488,12 @@ public final class SpellCaster {
         //   而这里原先的 `spawnParticle(particle, …)` 没有 data ⇒ **客户端根本不渲染**
         //   ⇒ 配置写对了、装载也过了、屏幕上却什么都没有。
         if (fx.hasBlockParticle()) {
-            emitBlockFx(fx, cells, origin, matchId, beat);
-            return;
+            // ★ 1.1.0：`particle` 与 `block` **同时**写 ⇒ 方块粒子铺满区域、粒子画边界环；
+            //   只写 `block` ⇒ 只画边界（掘墓者的既有行为）。
+            emitBlockFx(fx, cells, origin, matchId, beat, fx.particle() != null);
+            if (fx.particle() == null) {
+                return;
+            }
         }
         if (fx.particle() == null) {
             return;
@@ -1103,6 +1120,12 @@ public final class SpellCaster {
             }
             if (targeting == Spell.Targeting.GROUND && owner.side() == side) {
                 continue;   // GROUND 在 R29/R33 里是「对地施放」⇒ 只打敌方
+            }
+            // ★★★ 1.1.0（大旋风）：`spell.scope: SUMMONS` ⇒ **不收目标物载体**
+            //   （防御塔 / 信标的载体带 `KEY_OBJECTIVE`）。用户裁定「不含防御塔/信标」。
+            //   ★ 缺省 `ALL` ⇒ 既有 15 张法术卡行为一字未变。
+            if (!spell.includesObjectives() && registry.isObjective(id)) {
+                continue;
             }
             Entity entity = Bukkit.getEntity(id);
             if (!(entity instanceof LivingEntity living) || !living.isValid() || living.isDead()) {

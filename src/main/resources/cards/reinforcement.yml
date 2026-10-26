@@ -1,0 +1,27 @@
+id: reinforcement
+type: SPELL
+display-name: "<green>援军"
+flavor: "半个蛋，你去兵分四路包围敌人。"
+description:
+  - "<gray>在对战开始时，以及使用本卡牌后，<white>记录你使用的下一张牌</white>。"
+  - "<gray>使用时，<white>重置记录的卡牌的冷却时间</white>，然后清空记录。"
+  - "<gray>还没有记录时无法打出（同「回响」，不能作为第一张牌）。"
+icon: SHIELD
+cost: 1
+cooldown-ticks: 600
+rarity: COMMON
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：普通 援军 1 费 30s 法术
+#   技术细节：「所见即所得」
+#   ★ 状态机 = policy/ReinforcementMemory；接线 = game/CardCastListener#castReinforcement
+#     （这个效果类型**不在 EffectApplier 里结算**，与回响同一套「施放入口接住」的做法）。
+spell:
+  targeting: SELF
+  shape:
+    type: SINGLE
+    origin: SELF
+  effects:
+    - type: REINFORCEMENT
+  fx:
+    particle: ENCHANT
+    sound: block.note_block.chime

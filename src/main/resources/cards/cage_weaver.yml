@@ -1,0 +1,30 @@
+id: cage_weaver
+type: SUMMON
+display-name: "<green>囚笼编织者"
+flavor: "它在直播时也很擅长编织弹幕。"
+description:
+  - "<gray>召唤一只蜘蛛，该蜘蛛会在<white>攻击目标处结网</white>。"
+  - "<gray>网会存在 <white>8</white> 秒。"
+icon: COBWEB
+cost: 3
+cooldown-ticks: 400
+rarity: COMMON
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：「召唤一只蜘蛛，该蜘蛛会在攻击目标处结网，网会存在 8 秒」
+#   技术细节（用户 2026-10-26 追问后收严）：「织网仿照 IG 的『webber』词条，写生成、接管和
+#   删除蜘蛛网的逻辑…只替换空气与可替换方块（草、花、水、雪层），岩浆、石头、地板结构不碰」。
+summon:
+  group:
+    - entity: SPIDER
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  abilities:
+    - id: web_on_attack
+      trigger: ON_ATTACK
+      # 蜘蛛的攻击节拍约 1 秒 ⇒ 每 1 秒最多结一张网（不是每 tick 一张）
+      cooldown-ticks: 20
+      effects:
+        - type: PLACE_WEB
+          duration-ticks: 160

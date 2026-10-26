@@ -21,7 +21,49 @@ import java.util.Map;
  *                  {@code null} = 全都要（{@link Select#ALL}，既有行为）
  */
 public record Spell(Targeting targeting, Shape shape, List<Effect> effects, Fx fx,
-                    Select select) {
+                    Select select, Scope scope) {
+
+    /**
+     * ★★★ <b>「形状覆盖到的敌方实体里，准哪几类进来」</b> —— 1.1.0 新增（大旋风 / 凋灵领域）。
+     *
+     * <h2>为什么需要它（两张 1.1.0 法术的判据不一样）</h2>
+     * 「形状覆盖的格」里的敌方实体在本项目里有**两类**：①召唤物（含建筑类）
+     * ②<b>目标物载体</b>（防御塔 / 信标，见 {@code UnitRegistry#KEY_OBJECTIVE}）。
+     * 而 {@code docs/1.1卡牌.txt} 对这两张新卡的写法不同：
+     * <ul>
+     *   <li><b>凋灵领域</b>：用户 2026-10-26 明确裁定「<b>敌方一切：召唤物 + 建筑类召唤物 +
+     *       防御塔 + 信标</b>」⇒ {@link #ALL}（默认）；</li>
+     *   <li><b>大旋风</b>：用户裁定「<b>敌方召唤物（含建筑类召唤物），不含防御塔/信标，不含玩家</b>」
+     *       ⇒ {@link #SUMMONS}。</li>
+     * </ul>
+     *
+     * <h2>为什么做在「法术层」而不是「效果层」</h2>
+     * 与 {@link Select} 同一条理由：同一次施放的**所有**效果（伤害 / 牵引 / 药水）必须打
+     * <b>同一批</b>目标，否则会出现"被拉走却没掉血"这种没人能查的错。
+     *
+     * <p>★ 缺省 {@link #ALL} ⇒ 既有 15 张法术卡行为**一字未变**（它们从来没写过这个键）。
+     */
+    public enum Scope {
+        /** 形状内的**所有**敌方实体（召唤物 ＋ 目标物载体）—— 既有行为。 */
+        ALL,
+        /** 只要**敌方召唤物**（排除防御塔 / 信标本体）—— 1.1.0「大旋风」。 */
+        SUMMONS
+    }
+
+    /** 兼容构造（1.1.0 的 {@code spell.scope} 之前的五参形态）：缺省 {@link Scope#ALL}。 */
+    public Spell(Targeting targeting, Shape shape, List<Effect> effects, Fx fx, Select select) {
+        this(targeting, shape, effects, fx, select, Scope.ALL);
+    }
+
+    /** 规范构造器：{@code scope} 缺省补成 {@link Scope#ALL}。 */
+    public Spell {
+        scope = scope == null ? Scope.ALL : scope;
+    }
+
+    /** 这一档要不要把「目标物载体」（防御塔 / 信标）算进来。 */
+    public boolean includesObjectives() {
+        return scope == Scope.ALL;
+    }
 
     /**
      * ★★ <b>「范围内全都要」之外的那一档：按规则再挑</b> —— 2026-10-17 批次 3 收尾新增。
@@ -127,7 +169,13 @@ public record Spell(Targeting targeting, Shape shape, List<Effect> effects, Fx f
             this(particle, sound, block, false);
         }
 
-        /** 有没有方块粒子（有 ⇒ {@code particle} 不生效，走 {@code Particle.BLOCK} + data）。 */
+        /**
+         * 有没有方块粒子。
+         *
+         * <p>★ 只写 {@code block} ⇒ 方块粒子沿范围**边界**撒，{@code particle} 不使用
+         * （掘墓者的既有行为）；★★ 1.1.0 起**两者可同时写** ⇒ 方块粒子铺**环内区域**、
+         * {@code particle} 画**边界环**（地壳震击：「火焰粒子环 + 在环内区域持续产生泥土破碎粒子」）。
+         */
         public boolean hasBlockParticle() {
             return block != null && !block.isBlank();
         }
@@ -333,7 +381,62 @@ public record Spell(Targeting targeting, Shape shape, List<Effect> effects, Fx f
          *
          * <p>★ 无参数（{@code count} 由"目标个数"决定：一个目标一根尖牙）。
          */
-        SPAWN_FANGS
+        SPAWN_FANGS,
+        /**
+         * ★★★ <b>把范围内的敌人往中心「牵引」</b>（1.1.0「大旋风」）。
+         *
+         * <p>出处（{@code docs/1.1卡牌.txt}）：「将半径 <b>6</b> 格内的所有敌人向法术释放的位置
+         * 牵引，<b>每秒造成 2 点伤害，持续 2 秒</b>」＋「<b>牵引需要能够作用于带击退抗性的召唤物</b>」。
+         *
+         * <p>参数：{@code duration-ticks}（牵引时长，40）/
+         * {@code amount}（每次伤害）/ {@code interval-ticks}（伤害节拍，20 = 每秒一次）/
+         * 可选 {@code strength}（每 tick 朝中心的速度，缺省 0.35）。
+         * <ul>
+         *   <li>★ <b>每 tick</b>重申朝中心的速度（与 {@code PUSH} 同一个理由：原版每 tick 把速度往 0 收）；</li>
+         *   <li>★★ <b>刻意不读击退抗性</b> —— 用户点名要能拉动「带击退抗性的召唤物」；
+         *       目标物（防御塔 / 信标）不在这张卡的目标集里（{@code spell.scope: SUMMONS}），
+         *       所以"拉不拉得动塔"这个问题在配置层就不存在；</li>
+         *   <li>★ 伤害不是"每秒一次全体"而是<b>按目标各记一条节拍</b>（每个被拉住的单位自己数）。</li>
+         * </ul>
+         */
+        PULL,
+        /**
+         * ★★★ <b>持续区域伤害</b>（1.1.0「凋灵领域」）。
+         *
+         * <p>出处（{@code docs/1.1卡牌.txt}）：「持续 <b>8</b> 秒，<b>每秒</b>对半径 <b>5</b> 格范围内
+         * 所有召唤物造成 <b>5</b> 点伤害」＋「不<b>需要任何药水效果</b>…只造成伤害」。
+         *
+         * <p>参数：{@code duration-ticks}（160）/ {@code interval-ticks}（20）/
+         * {@code amount}（5）/ {@code radius}（5）。
+         * <ul>
+         *   <li>★★ <b>一次施放只跑一份任务</b>（不是"每个目标各跑一份"）：它每拍从**账本**重新
+         *       收集范围内的敌方实体 ⇒ 施放后才走进来的单位也会挨打（这是"领域"该有的行为）；</li>
+         *   <li>★ 不含任何 {@code POTION} 效果（用户点名"只用粒子云表现凋零，不挂凋零效果"）；</li>
+         *   <li>★ 归属判据与其它法术一致：只打<b>敌方</b>；要不要打目标物由 {@code spell.scope} 决定。</li>
+         * </ul>
+         */
+        AREA_DAMAGE,
+        /**
+         * ★★ <b>在目标脚下结蜘蛛网</b>（1.1.0「囚笼编织者」）。
+         *
+         * <p>出处：「该蜘蛛会在<b>攻击目标处结网</b>，网会存在 <b>8 秒</b>」。
+         * 参数：{@code duration-ticks}（160）。★ 能不能替换某一格由纯类
+         * {@code policy/WebBlockRule} 判（只碰空气与软方块，岩浆/石头/地板不碰）。
+         * 执行层在 {@code spell/WebField}（生成 → 登记 → 到期还原 / 对局收尾强制还原）。
+         */
+        PLACE_WEB,
+        /**
+         * ★★★ <b>「援军」的标记</b>（1.1.0）—— 与 {@link #REPLAY_LAST_CARD} 同一个套路。
+         *
+         * <p>出处（{@code docs/1.1卡牌.txt}）：「在对战开始时，以及使用本卡牌后，记录你使用的下一张牌。
+         * 使用时，<b>重置记录的卡牌的冷却时间</b>，然后清空记录」。
+         *
+         * <p>★ <b>它不在 {@code EffectApplier} 里结算</b>：重置冷却要读 {@code CardCooldowns}、
+         * 清遮罩要读玩家手上的卡物品 —— 那些都在 {@code game/CardCastListener} 手上。
+         * ⇒ 本效果只是给施放入口一个<b>可判定的标记</b>（与回响完全同构），
+         * 由 {@code CardCastListener} 在进法术管线**之前**接住。
+         */
+        REINFORCEMENT
     }
 
     /**

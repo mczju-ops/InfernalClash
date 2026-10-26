@@ -3,14 +3,20 @@ type: SUMMON
 display-name: "<red>海王"
 flavor: "三叉戟一落，海水都替他让路。"
 description:
-  - "<gray>召唤一只手持三叉戟、身穿钻石海岸纹样铁套的溺尸。"
+  - "<gray>召唤一只手持三叉戟、身穿钻石海岸纹样铁套的溺尸（<white>20</white> 血）。"
   - "<gray>登场时眩晕自身 <white>2</white> 格半径内的所有敌人，并造成 <white>8</white> 点伤害。"
-  - "<gray>攻击命中时眩晕该目标 <white>1</white> 秒。"
+  - "<gray>每 <white>1</white> 秒对目标造成 <white>8</white> 点伤害并眩晕 <white>1</white> 秒，同时落下一道闪电。"
+  - "<gray>对<white>海龟</white>额外造成 <white>1000</white> 点伤害（还原原版雷暴特性）。"
 icon: TRIDENT
 cost: 4
-cooldown-ticks: 200
+cooldown-ticks: 500
 rarity: LEGENDARY
 
+# ★ 1.1.0 平衡调整（docs/1.1卡牌.txt）：「海王生命值改为20血（能被火球砸死）；
+#   对海龟伤害+1000点（还原原版雷暴特性）；冷却时间增加到25s」
+#   ★ 24 点火球 ⇒ 20 血一击必杀；冷却 25 秒 = 500 tick。
+#   ★ 海龟加成走 DAMAGE 的 `bonus-vs-type` / `bonus-vs-amount`（用户 2026-10-26 裁定
+#     「海王的所有伤害对海龟额外 +1000（登场 AoE 与周期雷击都算）」⇒ 两条 DAMAGE 都写）。
 summon:
   group:
     - entity: DROWNED
@@ -19,6 +25,8 @@ summon:
   placement: GROUND_OR_SELF
   taunt: false
   block-ranged: true
+  attributes:
+    health: 20
   equipment:
     helmet: IRON_HELMET
     chestplate: IRON_CHESTPLATE
@@ -43,6 +51,8 @@ summon:
       effects:
         - type: DAMAGE
           amount: 8
+          bonus-vs-type: TURTLE
+          bonus-vs-amount: 1000
         - type: STUN
           duration-ticks: 40
     - id: area_damage_periodically
@@ -61,5 +71,7 @@ summon:
       effects:
         - type: DAMAGE
           amount: 8
+          bonus-vs-type: TURTLE
+          bonus-vs-amount: 1000
         - type: STUN
           duration-ticks: 20  # 1 秒

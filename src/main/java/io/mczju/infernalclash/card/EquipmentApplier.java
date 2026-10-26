@@ -70,6 +70,10 @@ public final class EquipmentApplier {
         put(map, EquipmentSlot.LEGS, equipment.leggings());
         put(map, EquipmentSlot.FEET, equipment.boots());
         put(map, EquipmentSlot.HAND, equipment.mainHand());
+        // ★★ 1.1.0（美愿轰炸机）：「它会戴着**浅绿色的挽具**登场」——
+        //   快乐恶魂的挽具走 {@code EquipmentSlot.BODY}（26.2 `javap` 实测该枚举存在；
+        //   挽具材料 = {@code LIME_HARNESS}）。
+        put(map, EquipmentSlot.BODY, equipment.body());
         return Collections.unmodifiableMap(map);
     }
 

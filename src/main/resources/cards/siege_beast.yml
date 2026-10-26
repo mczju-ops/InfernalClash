@@ -21,3 +21,5 @@ summon:
   attributes:
     health: 60
     movement-speed: 0.6
+    # ★ 1.1.0 平衡调整：「所有拥有『优先攻击建筑』词条的召唤物获得 +1 点击退抗性」
+    knockback-resistance: 1.0

@@ -3,12 +3,18 @@ type: SUMMON
 display-name: "<white>精密猎手"
 flavor: "每一次呼吸都算好了提前量。"
 description:
-  - "<gray>召唤一名手持力量 V 弓、身穿绿色皮革套装的骷髅。"
+  - "<gray>召唤一名身穿绿色皮革套装的骷髅，它手持长弓但<white>不再射箭</white>。"
+  - "<gray>每 <white>0.5</white> 秒打出一道<white>穿透射线</white>，对穿过的每个敌人造成 <white>2</white> 点伤害（<white>8</white> 格内）。"
 icon: SPECTRAL_ARROW
 cost: 2
 cooldown-ticks: 200
 rarity: BASIC
 
+# ★ 1.1.0 第 2 条需求（用户逐字）：「所有的持弓骷髅单位全部转化为『劲弩手』类似的远程单位，
+#   不会射出箭矢，而是射出粒子射线造成伤害。且需要能够索敌到敌方的空中单位」
+#   ⇒ 精密猎手 = 骷髅（持弓）⇒ 加 `summon.ray`（与劲弩手同参数：2 点 / 10 tick / 8 格）。
+#   ★ 弓保留（外观还是"持弓骷髅"），但箭不再生成（RangedAttackInterceptor 按同一份 ray 拦掉）；
+#     原来的「力量 V」附魔随箭一起作废 ⇒ 删掉（不给玩家一个"看起来更强"的假象）。
 summon:
   group:
     - entity: SKELETON
@@ -24,6 +30,8 @@ summon:
     leggings: LEATHER_LEGGINGS
     boots: LEATHER_BOOTS
     color: GREEN
-    enchantments:
-      main-hand:
-        power: 5
+  ray:
+    damage: 2
+    interval-ticks: 10
+    particle: PORTAL
+    range: 8

@@ -22,6 +22,8 @@ summon:
   stationary: true
   attributes:
     knockback-resistance: 1.0
+    # ★ 1.1.0 平衡调整（docs/1.1卡牌.txt）：「悦灵的尺寸增加至 scale*4.0」
+    scale: 4.0
   abilities:
     - id: gain_xp_periodically
       trigger: PERIODIC

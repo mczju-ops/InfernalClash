@@ -107,6 +107,18 @@ public final class CardCastListener implements Listener {
     public static final String KEY_ECHO_NO_PREVIOUS = "errors.echo-no-previous";
 
     /**
+     * ★★★ <b>援军：本局还没有记录到任何牌</b>（1.1.0 新增）。
+     *
+     * <p>出处 = 用户 2026-10-26 逐字：「<b>还没有任何记录时不可打出，同『回响』一样不可作为
+     * 第一张牌打出</b>」⇒ 与 {@link #KEY_ECHO_NO_PREVIOUS} 同一口径（拒绝发生在扣费之前）。
+     *
+     * <p>★ 这个键**没有写进 {@code display.yml}**（因此走代码里的中文回退文案）——
+     * 理由：这一轮不新增任何运行期配置键，免得又要按铁律 13 同步现场。
+     * 将来要改这条文案，把它加进 {@code display.yml} 即可（同名键会覆盖回退值）。
+     */
+    public static final String KEY_REINFORCEMENT_EMPTY = "errors.reinforcement-empty";
+
+    /**
      * ★★★ <b>这张法术必须先瞄到友方</b>（2026-10-18 新增）；占位符 {@code {aim}}
      * （= 「准星上没有目标」/「准星上的是敌方单位」这类说明）。
      *
@@ -344,6 +356,12 @@ public final class CardCastListener implements Listener {
                 replayLastCard(player, match, side, card, atGround ? clicked : null, golden);
                 return;
             }
+            // ★★★ 1.1.0「援军」：与回响同一个套路 —— 在进法术管线之前接住
+            //   （它要读本局的「记录」并重置另一张卡的冷却 + 清客户端遮罩）。
+            if (reinforces(card)) {
+                castReinforcement(player, match, side, card, golden);
+                return;
+            }
             castSpell(player, match, side, card, atGround ? clicked : null, golden);
             return;
         }
@@ -391,6 +409,8 @@ public final class CardCastListener implements Listener {
         }
         // ★★★ 2026-10-19：**只记成功的**（召唤真的出来了才记）⇒ 回响不会复读一张"没打出去"的牌
         match.castMemory().remember(side, card.id());
+        // ★★★ 1.1.0「援军」：同一条纪律（只记真的打出去的牌）
+        noteReinforcement(match, side, card.id());
         plugin.getLogger().info("[IC] " + player.getName() + "（" + side + "）打出 " + card.id()
                 + "，生成 " + spawned + " 个召唤物 @" + placement.cellX() + ","
                 + (atGround ? clicked.getY() : airCastGroundY(player, match, side))
@@ -411,6 +431,109 @@ public final class CardCastListener implements Listener {
         return card.spell().effects().stream()
                 .anyMatch(effect -> effect.type() == io.mczju.infernalclash.card.Spell.EffectType
                         .REPLAY_LAST_CARD);
+    }
+
+    /**
+     * ★ <b>这张卡是不是「援军」类</b>（{@code spell.effects} 里写了 {@code REINFORCEMENT}）。
+     *
+     * <p>★ 与 {@link #replaysLastCard} 完全同一套做法：判据只看卡牌数据，代码里不写死卡名。
+     */
+    static boolean reinforces(Card card) {
+        if (card == null || card.spell() == null) {
+            return false;
+        }
+        return card.spell().effects().stream()
+                .anyMatch(effect -> effect.type() == io.mczju.infernalclash.card.Spell.EffectType
+                        .REINFORCEMENT);
+    }
+
+    /**
+     * ★★★ <b>「援军」：重置「记录的下一张牌」的冷却</b>（1.1.0）。
+     *
+     * <h2>出处（{@code docs/1.1卡牌.txt}，逐字）</h2>
+     * 「在对战开始时，以及使用本卡牌后，记录你使用的下一张牌。使用时，
+     * <b>重置记录的卡牌的冷却时间</b>，然后清空记录。」
+     *
+     * <h2>顺序（每一步都有理由）</h2>
+     * <ol>
+     *   <li><b>先查有没有记录</b> —— 没有就<b>拒绝</b>（不扣费、不进冷却）。
+     *       用户 2026-10-26 逐字：「还没有任何记录时不可打出，同『回响』一样不可作为第一张牌打出」；</li>
+     *   <li>扣费 + 上自己的冷却（与其它法术同一条实现）；</li>
+     *   <li>取走记录并重新开始记录（{@link io.mczju.infernalclash.policy.ReinforcementMemory#consumeAndWatch}）；</li>
+     *   <li>把那张牌的冷却<b>清掉</b>（服务端表 + 客户端遮罩，缺一就是"能打却显示变暗"）；</li>
+     *   <li>★ <b>不</b>写 {@code castMemory}（回响的"上一张牌"）：援军不是可复读的牌
+     *       （复读它只会走到 {@code EffectApplier} 的"跳过"分支），
+     *       而且"上一张"保持不变更符合玩家的直觉。</li>
+     * </ol>
+     */
+    private void castReinforcement(Player player, MatchService match, Side side, Card card,
+                                   boolean golden) {
+        java.util.Optional<String> recorded = match.reinforcementMemory().recordedOf(side);
+        if (recorded.isEmpty()) {
+            tell(player, KEY_REINFORCEMENT_EMPTY,
+                    "援军：这一局你还没有记录到任何牌 —— 它不能当第一张牌打出"
+                            + "（没有消耗费用与冷却）。",
+                    Map.of(), NamedTextColor.RED);
+            return;
+        }
+        int paid = match.chargeXp(side, card.cost());
+        if (paid < 0) {
+            double missing = Math.max(0.0, card.cost() - match.xp(side));
+            tell(player, KEY_NOT_ENOUGH_XP,
+                    String.format("经验不足：这张卡要 %.0f，还差 %.1f。",
+                            (double) card.cost(), missing),
+                    Map.of("cost", String.format("%.0f", (double) card.cost()),
+                            "missing", String.format("%.1f", missing)),
+                    NamedTextColor.RED);
+            return;
+        }
+        startCooldown(player, match, card);
+        String target = match.reinforcementMemory().consumeAndWatch(side).orElse(null);
+        boolean reset = target != null && clearCooldownOf(player, match, target);
+        if (golden) {
+            playGoldenBurst(player.getLocation());
+        }
+        plugin.getLogger().info("[IC] " + player.getName() + "（" + side + "）打出 " + card.id()
+                + "，重置 " + (target == null ? "（无记录）" : target)
+                + " 的冷却" + (reset ? "" : "（它本来就不在冷却中）")
+                + "，之后记录下一张牌｜余量 " + String.format("%.2f", match.xp(side))
+                + (paid == 0 ? "｜本次不扣经验（infinite-xp）" : ""));
+    }
+
+    /**
+     * ★ 清掉**某一张卡**的冷却（服务端表 + 客户端遮罩）。
+     *
+     * <p>★ 两个动作缺一不可：只清表 ⇒ 玩家手上那张卡仍然变暗（"能打却显示冷却"）；
+     * 只清遮罩 ⇒ 服务端仍然拒发。
+     *
+     * @return 服务端表里真的删掉了一条吗
+     */
+    private boolean clearCooldownOf(Player player, MatchService match, String cardId) {
+        Side side = match.sideOf(player.getUniqueId());
+        boolean removed = match.cooldowns().reset(side, cardId);
+        Card card = plugin.cardCatalog().cards().get(cardId);
+        Material material = card == null ? null : cardMaterial(card);
+        if (material != null) {
+            try {
+                player.setCooldown(material, 0);
+            } catch (Throwable t) {
+                plugin.getLogger().warning("[IC] 清除冷却遮罩失败（" + cardId + "）：" + t);
+            }
+        }
+        return removed;
+    }
+
+    /**
+     * ★ 记一次「这一方打出的下一张牌」（援军的状态推进，1.1.0）。
+     *
+     * <p>★ 只在这三条**成功**路径上调用：召唤成功、法术施放成功、复读成功
+     * （与 {@code castMemory().remember(...)} 完全同一时机）。
+     * ★ 援军自己走 {@link #castReinforcement}（"清空 + 重新开始记录"），**不经过这里**。
+     */
+    private void noteReinforcement(MatchService match, Side side, String cardId) {
+        if (match.reinforcementMemory().noteCast(side, cardId)) {
+            plugin.getLogger().info("[IC] 援军已记录下一张牌：" + side + " → " + cardId);
+        }
     }
 
     /**
@@ -496,6 +619,8 @@ public final class CardCastListener implements Listener {
                     + "，复读召唤 " + replayed.id() + " ×" + spawned + " @" + placement.cellX()
                     + "," + (atGround ? clicked.getY() : airCastGroundY(player, match, side))
                     + "," + placement.cellZ() + "｜余量 " + String.format("%.2f", match.xp(side)));
+            // ★ 1.1.0「援军」：回响也是"打出了一张牌"
+            noteReinforcement(match, side, replayCard.id());
             return;
         }
         Location impact = clicked == null ? airCastImpact(player, match, side)
@@ -520,6 +645,8 @@ public final class CardCastListener implements Listener {
         plugin.getLogger().info("[IC] " + player.getName() + "（" + side + "）打出 " + replayCard.id()
                 + "，复读法术 " + replayed.id() + "｜覆盖 " + report.cells() + " 格 / 命中 "
                 + report.targets() + " 个目标｜余量 " + String.format("%.2f", match.xp(side)));
+        // ★ 1.1.0「援军」：复读法术也是"打出了一张牌"
+        noteReinforcement(match, side, replayCard.id());
     }
 
     /**
@@ -711,6 +838,8 @@ public final class CardCastListener implements Listener {
         // ★★★ 2026-10-19：**只记成功的**（法术真的放出去了才记）—— 回响的第二个记点。
         //   ★ 回响自己走的是 `replayLastCard`（不进 `castSpell`）⇒ **永远不会**被记进来。
         match.castMemory().remember(side, card.id());
+        // ★★★ 1.1.0「援军」：法术路径的同一个记点
+        noteReinforcement(match, side, card.id());
         // ★★ 2026-10-20（用户：「金卡召唤/释放时的金色粒子特效没有添加」）：
         //   金卡**施放成功**的那一刻，在落点（瞄了方块）或脚下（对空气）撒一簇打蜡粒子。
         //   ★ 位置刻意放在"成功之后"：失败（退费）的那一路不该冒金光 —— 那会让人以为放出去了。

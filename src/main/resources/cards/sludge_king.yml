@@ -1,0 +1,67 @@
+id: sludge_king
+type: SUMMON
+display-name: "<blue>淤泥之王"
+flavor: "它那些琳琅满目，黏糊糊的收藏品正是它称王的资本"
+description:
+  - "<gray><white>建筑</white>"
+  - "<gray>召唤一只巨大的史莱姆（生命 <white>30</white>），可存在 <white>30</white> 秒。"
+  - "<gray>它每 <white>5</white> 秒召唤一名沼泽游击队队员，死亡时还会再召唤 <white>2</white> 名。"
+icon: MUD
+cost: 5
+cooldown-ticks: 600
+rarity: RARE
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：稀有 淤泥之王 5 费 30s 建筑
+#   技术细节（逐字）：「史莱姆除了是大型还要scale*1.2，血量30，生成时带有凋零I，死亡不会分裂」
+#   ★ 「可存在 30 秒」：与巫术壁垒同一套口径 —— 不写 lifetime-ticks，
+#     由**凋零 I** 自己把它耗死（用户 2026-10-26：「史莱姆会凋零死掉」）。
+#   ★ 「死亡不会分裂」由 battle/SummonLifecycleGuard 自动压制（账本里的史莱姆一律不分裂）。
+summon:
+  group:
+    - entity: SLIME
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: true
+  building: true
+  stationary: true
+  attributes:
+    size: 4
+    scale: 1.2
+    health: 30
+    knockback-resistance: 1.0
+  abilities:
+    - id: poison_on_summon
+      trigger: ON_SUMMON
+      effects:
+        - type: POTION
+          effect: WITHER
+          amplifier: 0
+          duration-ticks: 72000
+    # 每 5 秒召唤 1 名沼泽游击队队员（同样 8 血 / ×0.8 / 速度 II）
+    - id: summon_periodically
+      trigger: PERIODIC
+      cooldown-ticks: 100
+      effects:
+        - type: SUMMON
+          group: &guerrilla
+            entity: BOGGED
+            count: 1
+            name: "沼泽游击队队员"
+            attributes: { health: 8, scale: 0.8 }
+            abilities:
+              - id: speed_on_summon
+                trigger: ON_SUMMON
+                effects:
+                  - type: POTION
+                    effect: SPEED
+                    amplifier: 1
+                    duration-ticks: 100000
+    # 死亡时再召唤 2 名
+    - id: summon_on_death
+      trigger: ON_DEATH
+      effects:
+        - type: SUMMON
+          group: *guerrilla
+        - type: SUMMON
+          group: *guerrilla

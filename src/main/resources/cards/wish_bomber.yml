@@ -1,0 +1,45 @@
+id: wish_bomber
+type: SUMMON
+display-name: "<red>美愿轰炸机"
+flavor: "怨恨和愤怒只会让魂变得脆弱，这只恶魂远比你想象的坚韧。"
+description:
+  - "<gray>召唤一只 <white>80</white> 血的<white>快乐恶魂</white>，戴着<white>浅绿色挽具</white>登场。"
+  - "<gray>它会像怨恨轰炸机那样飞到敌人的建筑上轰炸，每 <white>0.5</white> 秒造成 <white>2</white> 点伤害。"
+  - "<gray>死亡时返还 <white>3</white> 点经验值。"
+  - "<gray>优先攻击建筑。"
+icon: LIME_HARNESS
+cost: 8
+cooldown-ticks: 800
+rarity: LEGENDARY
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：传说 美愿轰炸机 8 费 40s
+#   技术细节（逐字）：「这只快乐恶魂的生命中有80点，且会像怨恨轰炸机那样飞到敌人的建筑上轰炸，
+#   每0.5秒造成2点伤害。它会戴着浅绿色的挽具登场」
+#   ★ 逐格落点：bomber（复用怨恨轰炸机的飞行 + 垂直投弹）＋ bomber-damage 2 /
+#     bomber-interval-ticks 10（每 0.5 秒）＋ bomber-particle HEART（观感，可改）；
+#     affected-by-building（优先攻击建筑）；equipment.body = LIME_HARNESS（挽具）；
+#     亡语 GRANT_XP 3（能力 id `deathrattle_grant_xp`）。
+summon:
+  group:
+    - entity: HAPPY_GHAST
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  affected-by-building: true
+  bomber: true
+  bomber-damage: 2
+  bomber-interval-ticks: 10
+  bomber-particle: HEART
+  attributes:
+    health: 80
+    # ★ 1.1.0 平衡调整：「所有拥有『优先攻击建筑』词条的召唤物获得 +1 点击退抗性」
+    knockback-resistance: 1.0
+  equipment:
+    body: LIME_HARNESS
+  abilities:
+    - id: deathrattle_grant_xp
+      trigger: ON_DEATH
+      effects:
+        - type: GRANT_XP
+          amount: 3

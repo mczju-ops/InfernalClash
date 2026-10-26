@@ -1,0 +1,40 @@
+id: great_whirlwind
+type: SPELL
+display-name: "<red>大旋风"
+flavor: "其实只是因为旋风中心有一只tosser和隐身词条的炒鸡猪。"
+description:
+  - "<gray>将半径 <white>6</white> 格内的所有敌人向法术释放的位置<white>牵引</white>，"
+  - "<gray>每秒造成 <white>2</white> 点伤害，持续 <white>2</white> 秒。"
+icon: BREEZE_ROD
+cost: 3
+cooldown-ticks: 600
+rarity: LEGENDARY
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：传说 大旋风 3 费 30s 法术
+#   「将半径6格内的所有敌人向法术释放的位置牵引，每秒造成2点伤害，持续2秒」
+#   技术细节（逐字）：「末地烛粒子环+蓄风药水云。实际上会对范围内的生物挂上蓄风效果。
+#   牵引需要能够作用于带击退抗性的召唤物」
+#   ★ 牵引（PULL）**刻意不读击退抗性**；作用面 = 用户 2026-10-26 裁定
+#     「敌方召唤物（含建筑类召唤物），不含防御塔/信标，不含玩家」⇒ `scope: SUMMONS`。
+#   ★ 蓄风药水效果 = WIND_CHARGED（Paper 26.2 `javap` 实测存在）。
+spell:
+  targeting: GROUND
+  # 只收敌方召唤物（排除目标物载体：防御塔 / 信标）
+  scope: SUMMONS
+  shape:
+    type: CIRCLE
+    radius: 6
+    origin: IMPACT
+  effects:
+    - type: PULL
+      duration-ticks: 40
+      interval-ticks: 20
+      amount: 2
+      strength: 0.45
+    - type: POTION
+      effect: WIND_CHARGED
+      amplifier: 0
+      duration-ticks: 40
+  fx:
+    particle: END_ROD
+    sound: entity.breeze.wind_burst

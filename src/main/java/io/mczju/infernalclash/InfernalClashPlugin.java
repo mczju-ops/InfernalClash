@@ -850,11 +850,12 @@ public final class InfernalClashPlugin extends JavaPlugin {
         //   顺序反了会变成「钩子里持有 null」（P4 踩过：编译不报错、只在运行期静默失效）
         this.abilityRuntime = new io.mczju.infernalclash.ability.AbilityRuntime(
                 this, this.cardCatalog, null);
-        this.summonSpawner.setSpawnHook((entity, card, matchId, side, owner) -> {
+        this.summonSpawner.setSpawnHook((entity, card, matchId, side, owner, extraAbilities) -> {
             io.mczju.infernalclash.match.MatchService match =
                     io.mczju.infernalclash.match.MatchService.get(matchId);
             if (match != null) {
-                this.abilityRuntime.onSummonSpawn(entity, card, matchId, side, owner, match);
+                this.abilityRuntime.onSummonSpawn(entity, card, matchId, side, owner, match,
+                        extraAbilities);
             }
         });
 

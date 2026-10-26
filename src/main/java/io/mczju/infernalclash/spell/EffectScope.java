@@ -51,7 +51,12 @@ public final class EffectScope {
                     Spell.EffectType.GRANT_XP,
                     Spell.EffectType.COOLDOWN_REDUCTION,
                     // ★ 2026-10-19「回响」：复读读的是**本局状态**（上一张牌），不需要目标实体。
-                    Spell.EffectType.REPLAY_LAST_CARD);
+                    Spell.EffectType.REPLAY_LAST_CARD,
+                    // ★ 1.1.0「援军」：重置的是**本局状态**（CardCooldowns），不需要目标实体。
+                    Spell.EffectType.REINFORCEMENT,
+                    // ★ 1.1.0「凋灵领域」：领域是**位置**的属性（以 origin 为圆心），
+                    //   施放那一刻圈里有没有人都不影响"领域已经展开"这件事。
+                    Spell.EffectType.AREA_DAMAGE);
 
     private EffectScope() {
     }
@@ -68,16 +73,49 @@ public final class EffectScope {
         }
         return switch (type) {
             case SUMMON, SUMMON_DELAYED, SUMMON_PERIODICALLY, CAST_SPELL,
-                 REFRESH_COOLDOWN, GRANT_XP, COOLDOWN_REDUCTION, REPLAY_LAST_CARD -> true;
+                 REFRESH_COOLDOWN, GRANT_XP, COOLDOWN_REDUCTION, REPLAY_LAST_CARD,
+                 // ★ 1.1.0：援军（本局状态）与凋灵领域（位置属性）都不需要目标实体。
+                 REINFORCEMENT, AREA_DAMAGE -> true;
             // ★ SPAWN_FANGS 必须有目标（尖牙长在"目标脚下"）⇒ 一个都没命中就什么都不做。
+            // ★ 1.1.0：PULL（拉谁？）/ PLACE_WEB（在谁脚下结网？）同样必须有目标。
             case DAMAGE, HEAL, POTION, ATTRIBUTE, STUN, IGNITE, KNOCKBACK, PUSH, REVIVE,
-                 SPAWN_FANGS -> false;
+                 SPAWN_FANGS, PULL, PLACE_WEB -> false;
         };
     }
 
     /** 只读清单（测试与文档用）。 */
     public static Set<Spell.EffectType> withoutTargetTypes() {
         return Set.copyOf(WITHOUT_TARGET);
+    }
+
+    /**
+     * ★★ <b>「整场只跑一次」的效果</b>（1.1.0 新增，凋灵领域）。
+     *
+     * <h2>为什么需要第三档</h2>
+     * 效果派发目前只有两档：<b>逐目标</b>（每个命中目标各施加一次）与
+     * <b>无目标时跑一次</b>（{@link #runsWithoutTarget}）。而"持续区域伤害"是第三种：
+     * <ul>
+     *   <li>它<b>不是</b>逐目标 —— 每拍都要从账本重新收集范围内的人（这样施放后才走进来的也挨打），
+     *       若按目标各跑一份任务，一个 5 人圈里会跑 5 份、伤害翻 5 倍；</li>
+     *   <li>它也<b>不是</b>"没目标才跑" —— 圈里有 3 个人时也一样只跑一份。</li>
+     * </ul>
+     * ⇒ 单独一档：{@code SpellCaster} 在**进目标循环之前**施加一次（锚点用 {@code origin}）。
+     *
+     * <p>★ 新增效果类型时必须回答"它属于哪一档"（{@link #runsWithoutTarget} 的 switch 会编译报错，
+     * 本清单则需要在加新类型时**主动**检查一次 —— 已经在 {@code EffectScopeTest} 里用
+     * 「两档不许重叠」的不变式钉住）。
+     */
+    private static final Set<Spell.EffectType> ONCE_PER_CAST =
+            EnumSet.of(Spell.EffectType.AREA_DAMAGE);
+
+    /** 这个效果是不是「整场只跑一次」（见 {@link #ONCE_PER_CAST}）。 */
+    public static boolean runsOncePerCast(Spell.EffectType type) {
+        return type != null && ONCE_PER_CAST.contains(type);
+    }
+
+    /** 只读清单（测试与文档用）。 */
+    public static Set<Spell.EffectType> oncePerCastTypes() {
+        return Set.copyOf(ONCE_PER_CAST);
     }
 
     /** 中文说明（施放报告的 {@code note} 里用）。 */

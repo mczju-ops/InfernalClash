@@ -122,12 +122,40 @@ public final class UnitLifecycleListener implements Listener {
         revivedOnce.add(id);
         event.setCancelled(true);
         event.setReviveHealth(ReviveRule.reviveHealth(maxHealth));
+        // ★★★ 1.1.0（用户第 7 条）：「**最萌捕食者增加复活时的特效和音效**」。
+        //   ★ 粒子/音效是我按"复活"这个动作挑的原版常量（不死图腾），**可否决**
+        //     （与 docs/05 里其它观感默认值同一条纪律：只影响观感，随时可换）。
+        //   ★ 放在**取消死亡之后**：复活没成立就不该冒金光。
+        playReviveFx(entity);
         if (logger != null) {
             logger.info("[IC] 假死复活：" + (card == null ? "?" : card.id()) + " 回满 "
                     + String.format("%.1f", ReviveRule.reviveHealth(maxHealth))
                     + " 血（上限 1 次，uuid=" + id + "）");
         }
         return true;
+    }
+
+    /**
+     * ★ 复活的那一下：不死图腾粒子 ＋ 图腾音效（1.1.0，纯观感）。
+     *
+     * <p>任何异常都吞掉 —— 粒子失败绝不能让"已经取消的死亡"回滚（那会变成"复活了但没复活"）。
+     */
+    private void playReviveFx(Entity entity) {
+        try {
+            org.bukkit.Location at = entity.getLocation();
+            if (at.getWorld() == null) {
+                return;
+            }
+            org.bukkit.Location center = at.clone()
+                    .add(0.0, Math.max(0.2, entity.getHeight()) / 2.0, 0.0);
+            at.getWorld().spawnParticle(org.bukkit.Particle.TOTEM_OF_UNDYING, center,
+                    60, 0.45, 0.7, 0.45, 0.25);
+            at.getWorld().playSound(at, "item.totem.use", 1.0f, 1.1f);
+        } catch (Throwable t) {
+            if (logger != null) {
+                logger.warning("[IC] 复活特效播放失败（只影响观感，复活本身已生效）：" + t);
+            }
+        }
     }
 
     /** 从账本 PDC 取卡 id，再从卡池取卡；任一缺失都返回 null（不猜）。 */

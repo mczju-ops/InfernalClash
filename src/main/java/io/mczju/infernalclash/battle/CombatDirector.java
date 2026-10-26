@@ -113,6 +113,9 @@ public final class CombatDirector implements MatchHooks {
     /** ★★★ 穿透射线（2026-10-21 新增，劲弩手）；{@code null} = 没有卡池（离线夹具）。 */
     private final RayAttackService rays;
 
+    /** ★★★ 1.1.0「墨影窃贼」的 0→1 瞬移；{@code null} = 没有卡池（离线夹具）。 */
+    private final ShadowStepService shadows;
+
     private int tickCounter;
     private int lastLoggedUnitCount = -1;
 
@@ -157,6 +160,8 @@ public final class CombatDirector implements MatchHooks {
         // ★★★ 2026-10-21（用户裁定）：穿透射线的执行层（劲弩手 / 劫掠堡垒的乘客）。
         //   ★ 只在有卡池时建（射线是**卡级配置** `summon.ray`）⇒ 离线夹具传 null 时这条机制不跑。
         this.rays = catalog == null ? null : new RayAttackService(registry, catalog, logger);
+        // ★★★ 1.1.0（墨影窃贼）：0→1 敌人侦测 + 瞬移（只有写了 `summon.shadow-step` 的卡生效）。
+        this.shadows = catalog == null ? null : new ShadowStepService(registry, catalog, logger);
         // ★★★ 2026-10-18（用户第 3 条的第二层）：每局一个「自己人不打自己人」的伤害守卫
         //   ⇒ 即使原版 AI 在某个缝隙里让召唤物把同侧单位/目标物当成目标，那一下也打不出伤害。
         //   ★ 必须在这里 `registerEvents`：本类**不是 Listener**，写在它上面的 @EventHandler
@@ -287,6 +292,12 @@ public final class CombatDirector implements MatchHooks {
         }
         if (bombers != null) {
             bombers.clear();      // ★ 轰炸机的记账（`aiDisabled` / `lastDrop`）
+        }
+        if (rays != null) {
+            rays.clear();         // ★ 射线缓存（1.1.0 一并补上：原来只在 onStop 里漏了它）
+        }
+        if (shadows != null) {
+            shadows.clear();      // ★ 1.1.0：墨影窃贼的基线表
         }
         if (removed > 0) {
             logger.info("[IC] 已卸载本场自建的 drive goal " + removed + " 个（" + reason
@@ -443,6 +454,11 @@ public final class CombatDirector implements MatchHooks {
         //     所以这里只管"打出去的那一根"。
         if (rays != null) {
             rays.onTick(units, tickCounter);
+        }
+        // ★★★ 1.1.0（墨影窃贼）：每 tick 数一次"周围 8 格内的敌人"，0→1 就瞬移过去。
+        //   ★ 放在射线之后：两者互不依赖，排序只为「读起来按 1.1.0 的新增顺序」。
+        if (shadows != null) {
+            shadows.onTick(units);
         }
     }
 

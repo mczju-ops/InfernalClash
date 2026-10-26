@@ -1,0 +1,34 @@
+id: wither_domain
+type: SPELL
+display-name: "<light_purple>凋灵领域"
+flavor: "难怪煤矿工人容易得肺病"
+description:
+  - "<gray>持续 <white>8</white> 秒，每秒对半径 <white>5</white> 格范围内所有敌人造成 <white>5</white> 点伤害。"
+icon: WITHER_ROSE
+cost: 4
+cooldown-ticks: 400
+rarity: EPIC
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：史诗 凋灵领域 4 费 20s 法术
+#   「持续8秒，每秒对半径5格范围内所有召唤物造成5点伤害」
+#   技术细节（逐字）：「不需要任何药水效果。范围使用凋零粒子环+范围内持续生成凋零药水云，
+#   但不会为敌人挂上凋零效果，只造成伤害」
+#   ★ 打谁：用户 2026-10-26 明确裁定「**敌方一切：召唤物 + 建筑类召唤物 + 防御塔 + 信标**」
+#     ⇒ 不写 `spell.scope`（缺省 ALL = 含目标物载体）。
+#   ★ 一次施放只跑一份任务（EffectScope#runsOncePerCast），每拍从账本重新收集范围内的敌人
+#     ⇒ 施放后才走进来的单位也会挨打。
+spell:
+  targeting: GROUND
+  shape:
+    type: CIRCLE
+    radius: 5
+    origin: IMPACT
+  effects:
+    - type: AREA_DAMAGE
+      duration-ticks: 160
+      interval-ticks: 20
+      amount: 5
+      radius: 5
+  fx:
+    particle: WHITE_ASH
+    sound: entity.wither.spawn

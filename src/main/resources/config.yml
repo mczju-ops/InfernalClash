@@ -230,6 +230,13 @@ training:
     grave_digger: RANDOM_ALLY_CENTER
     fox_guide: RANDOM_ALLY_CENTER
     healing: RANDOM_ALLY_TARGET
+    # ★★★ 1.1.0 新增的三张法术（「援军」故意不配 —— 它进 BOT_FORBIDDEN_CARDS）
+    #   ★ 援军为什么人机不能用：它的语义是"重置**本局记录到的下一张牌**的冷却"，
+    #     而那套状态挂在**玩家施放入口**（CardCastListener）上；人机不走那条入口
+    #     ⇒ 它永远没有记录、永远打不出去（与「回响」同一个理由）。
+    crust_quake: NEAREST_ENEMY       # 地壳震击：范围伤害，打最近的敌人
+    wither_domain: NEAREST_ENEMY     # 凋灵领域：以最近的敌人为中心铺领域
+    great_whirlwind: NEAREST_ENEMY   # 大旋风：把最近的敌人往落点拉
 
   # ★★ 建筑类召唤牌的落点（2026-10-21 裁定；权威说明 docs/32）。**只对人机生效**。
   #   三个取值（选哪座塔 + 沿「前向」偏移几格）：
@@ -245,7 +252,13 @@ training:
     allay: BACK              # 悦灵
     blaze_guard: CENTER      # 烈焰守卫
     sentry: CENTER           # 哨位
+    # ★ 1.1.0 新增的两张建筑（都属于「剩下的建筑」⇒ 中置）
+    ancient_watcher: CENTER  # 远古监视者
+    sludge_king: CENTER      # 淤泥之王
     # immortal_banner: —     # 不朽旗手：用户明说不配置 ⇒ 走普通规则
+    # ★ 巫术壁垒（witch_bulwark）也不能配：它的 `summon.building` 是**卡级 false**
+    #   （只有史莱姆那一组是建筑）⇒ 这一节的口径是"卡级 building: true"，
+    #   写进来会拒绝启动。它会走普通召唤规则。
 
   # ★★ 「前 / 后」是哪个方向（四方位，取值 = card/Facing 的四个名字）。
   #   ★ 必须按竞技场实际朝向来配：某一方的「前」= 朝敌方（中线）的方向。

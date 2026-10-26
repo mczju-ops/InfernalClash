@@ -1,0 +1,32 @@
+id: crust_quake
+type: SPELL
+display-name: "<blue>地壳震击"
+flavor: "其实只是你的上铺室友翻了个身"
+description:
+  - "<gray>对 <white>5</white> 格范围内的敌人造成 <white>15</white> 点伤害。"
+  - "<gray>对<white>建筑</white>造成<white>双倍</white>伤害（防御塔、信标都算建筑）。"
+icon: ROOTED_DIRT
+cost: 3
+cooldown-ticks: 400
+rarity: RARE
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：稀有 地壳震击 3 费 20s 法术
+#   「对5格范围内的目标造成15点伤害，对建筑造成双倍伤害」
+#   技术细节：「建筑指所有建筑卡牌；防御塔、信标都算建筑；
+#             使用火焰粒子环+在环内区域持续产生泥土破碎粒子」
+#   ★ 「双倍」走 DAMAGE 的 `building-multiplier`（判据 = 账本上的 building 标记，
+#     同时覆盖目标物与 6 张建筑卡）；★ 环用 particle、区域内用 block（见 SpellCaster#emitFx）。
+spell:
+  targeting: GROUND
+  shape:
+    type: CIRCLE
+    radius: 5
+    origin: IMPACT
+  effects:
+    - type: DAMAGE
+      amount: 15
+      building-multiplier: 2
+  fx:
+    particle: FLAME
+    block: DIRT
+    sound: block.gravel.break

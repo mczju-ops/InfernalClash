@@ -1,0 +1,31 @@
+id: mobile_nuke
+type: SUMMON
+display-name: "<light_purple>机动核弹"
+flavor: "那天海王和恐怖分子喝多了……"
+description:
+  - "<gray>召唤一只<white>闪电苦力怕</white>，且召唤时其获得 <white>5</white> 秒<white>抗性提升 V</white>。"
+icon: CREEPER_SPAWN_EGG
+cost: 5
+cooldown-ticks: 600
+rarity: EPIC
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：史诗 机动核弹 5 费 30s
+#   「召唤一只闪电苦力怕，且召唤时其获得5s抗性提升V」
+#   ★ 上电 = `summon.powered`（SummonSpawner#applyPowered）
+#   ★ 抗性提升 V = amplifier 4（MC 的 amplifier = 等级 − 1），5 秒 = 100 tick
+summon:
+  group:
+    - entity: CREEPER
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  powered: true
+  abilities:
+    - id: resistance_on_summon
+      trigger: ON_SUMMON
+      effects:
+        - type: POTION
+          effect: RESISTANCE
+          amplifier: 4
+          duration-ticks: 100

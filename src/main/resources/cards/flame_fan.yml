@@ -4,12 +4,15 @@ display-name: "<light_purple>烈焰扇击"
 flavor: "你抬手一扇，火焰就替你画了个扇面。"
 description:
   - "<gray>朝落点方向扇出半径 <white>8</white> 格、张角 <white>120°</white> 的火焰扇面。"
-  - "<gray>范围内敌人各受 <white>12</white> 点伤害，并被点燃 <white>3</white> 秒。"
+  - "<gray>范围内敌人各受 <white>16</white> 点伤害，并被点燃 <white>20</white> 秒（合计 <white>36</white> 点）。"
 icon: BLAZE_POWDER
-cost: 4
+cost: 3
 cooldown-ticks: 400
 rarity: EPIC
 
+# ★ 1.1.0 平衡调整（docs/1.1卡牌.txt）：
+#   「烈焰扇击改为3费16点即时伤害+20秒点燃（共计36点伤害）」
+#   ★ 点燃 20 秒 = 400 tick；原版火焰每 20 tick（1 秒）1 点 ⇒ 20 点，合计 36。
 spell:
   targeting: GROUND
   shape:
@@ -19,9 +22,9 @@ spell:
     origin: IMPACT
   effects:
     - type: DAMAGE
-      amount: 12
+      amount: 16
     - type: IGNITE
-      duration-ticks: 60  # 3 秒
+      duration-ticks: 400  # 20 秒
   fx:
     particle: FLAME
     sound: entity.blaze.shoot

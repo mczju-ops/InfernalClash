@@ -6,14 +6,16 @@ description:
   - "<gray>召唤一只<white>最小形态</white>的岩浆怪。"
   - "<gray>它登场时获得<white>速度 V</white>，攻击命中时点燃敌人。"
 icon: MAGMA_CREAM
-cost: 1
-cooldown-ticks: 200
+cost: 0
+cooldown-ticks: 100
 rarity: COMMON
 
+# ★ 1.1.0 平衡调整（docs/1.1卡牌.txt）：「烈焰精灵改为0费召唤1只，冷却时间减少为5s」
+#   ★ 0 费 = 不消耗经验（CardCharge 的 cost 0 合法）；冷却 5 秒 = 100 tick。
 summon:
   group:
     - entity: MAGMA_CUBE
-      count: 3
+      count: 1
       offset: { forward: 0, right: 0 }
   placement: GROUND_OR_SELF
   taunt: false

@@ -160,10 +160,34 @@ public record Card(String id,
      *                         绝不把任务挂在无人回收的地方；</li>
      *                     <li>取值 <b>1 ~ 72000</b>（= 1 小时；越界 ⇒ 装载期 {@code ConfigError}）。</li>
      *                   </ul>
+     * @param building ★★ <b>这一组算不算「建筑」</b>（{@code group[].building}）—— 1.1.0 新增。
+     *
+     *        <h3>为什么需要「逐组」</h3>
+     *        1.1.0 的「巫术壁垒」是<b>骑史莱姆的亡灵契约师</b>，而用户逐字规定：
+     *        「**只有史莱被算作建筑**，不能移动」。卡级的 {@code summon.building} 会把骑手
+     *        一起打成建筑 ⇒ 两种实体必须能分开。
+     *
+     *        <h3>口径</h3>
+     *        <b>{@code null}（缺省）</b>＝ 跟随卡级 {@code summon.building}（其余 62 张卡是这一档，
+     *        行为一字未变）；非 {@code null} ⇒ <b>本组以此为准</b>（组级覆盖卡级）。
+     *        ★ 与 {@code group[].attributes} 的覆盖方向一致：<b>组级 > 卡级</b>。
+     * @param abilities ★★ <b>这一组专属的特殊能力</b>（{@code group[].abilities}）—— 1.1.0 新增。
+     *
+     *        <h3>为什么必须逐组</h3>
+     *        「巫术壁垒」= 史莱姆（40 血、带凋零 I、不能分裂）驮着亡灵契约师（24 血、
+     *        每 3 秒一颗 20 点火球）。两支的**能力完全不同**，而卡级 {@code summon.abilities}
+     *        会同时挂在两支身上 ⇒ 史莱姆也会朝人扔火球。
+     *
+     *        <h3>口径</h3>
+     *        实际生效的能力 = <b>卡级 {@code summon.abilities} ＋ 本组 {@code abilities}</b>
+     *        （两者都保留，顺序 = 先卡级后组级）。缺省空表 ⇒ 63 张卡里 62 张行为一字未变。
+     *        ★ 与法术 {@code SUMMON} 效果里的 {@code group.abilities} 是**同一个概念**
+     *        （那边早就支持，见 {@code cards/blaze_furnace.yml}）。
      */
     public record Group(String entity, int count, int forward, int right, double spread,
                         Attributes attributes, String mount, java.util.List<Integer> rows,
-                        Formation formation, Integer lifetimeTicks) {
+                        Formation formation, Integer lifetimeTicks, Boolean building,
+                        List<Ability> abilities) {
 
         /**
          * 规范构造器：{@code rows} 的 {@code null} 归一成空表。
@@ -174,31 +198,61 @@ public record Card(String id,
          */
         public Group {
             rows = rows == null ? java.util.List.of() : java.util.List.copyOf(rows);
+            abilities = abilities == null ? java.util.List.of() : java.util.List.copyOf(abilities);
         }
 
         /** 兼容构造（不写骑乘、不写方阵、不写成形排布）：绝大多数卡都是这一档。 */
         public Group(String entity, int count, int forward, int right, double spread,
                      Attributes attributes) {
-            this(entity, count, forward, right, spread, attributes, null, null, null, null);
+            this(entity, count, forward, right, spread, attributes, null, null, null, null, null,
+                    null);
         }
 
         /** 兼容构造（写骑乘，不写方阵 / 成形排布）。 */
         public Group(String entity, int count, int forward, int right, double spread,
                      Attributes attributes, String mount) {
-            this(entity, count, forward, right, spread, attributes, mount, null, null, null);
+            this(entity, count, forward, right, spread, attributes, mount, null, null, null, null,
+                    null);
         }
 
         /** 兼容构造（写方阵，不写成形排布）—— 2026-10-18 {@code formation} 之前的那一参形态。 */
         public Group(String entity, int count, int forward, int right, double spread,
                      Attributes attributes, String mount, java.util.List<Integer> rows) {
-            this(entity, count, forward, right, spread, attributes, mount, rows, null, null);
+            this(entity, count, forward, right, spread, attributes, mount, rows, null, null, null,
+                    null);
         }
 
         /** 兼容构造（写成形排布，不写存活期）—— 2026-10-18 {@code lifetime-ticks} 之前的那一参形态。 */
         public Group(String entity, int count, int forward, int right, double spread,
                      Attributes attributes, String mount, java.util.List<Integer> rows,
                      Formation formation) {
-            this(entity, count, forward, right, spread, attributes, mount, rows, formation, null);
+            this(entity, count, forward, right, spread, attributes, mount, rows, formation, null,
+                    null, null);
+        }
+
+        /** 兼容构造（1.1.0 {@code group[].building} 之前的十参形态）。 */
+        public Group(String entity, int count, int forward, int right, double spread,
+                     Attributes attributes, String mount, java.util.List<Integer> rows,
+                     Formation formation, Integer lifetimeTicks) {
+            this(entity, count, forward, right, spread, attributes, mount, rows, formation,
+                    lifetimeTicks, null, null);
+        }
+
+        /** 兼容构造（1.1.0 {@code group[].abilities} 之前的十一参形态）。 */
+        public Group(String entity, int count, int forward, int right, double spread,
+                     Attributes attributes, String mount, java.util.List<Integer> rows,
+                     Formation formation, Integer lifetimeTicks, Boolean building) {
+            this(entity, count, forward, right, spread, attributes, mount, rows, formation,
+                    lifetimeTicks, building, null);
+        }
+
+        /**
+         * 这一组算不算建筑（组级覆盖；没写 ⇒ 跟随卡级）。
+         *
+         * @param cardLevel 卡级 {@code summon.building}
+         */
+        public boolean buildingOr(boolean cardLevel) {
+            return building == null ? cardLevel : building;
         }
 
         /** 这一组有没有存活期（{@code lifetime-ticks} 非 null）。 */
@@ -576,7 +630,27 @@ public record Card(String id,
                          boolean building,
                          Ray ray,
                          boolean fangAttack,
-                         boolean oxidized) {
+                         boolean oxidized,
+                         Extra extra) {
+
+        /**
+         * 兼容构造（1.1.0 的 {@code extra} 之前的二十参形态）。
+         *
+         * <p>★ 保留它 ⇒ 既有调用点与测试夹具一字不改，且「新增的三个键」在代码里
+         * <b>只从 {@link Extra} 读</b>（不存在第二处来源）。
+         */
+        public Summon(List<Group> groups, Placement placement, boolean taunt,
+                      boolean affectedByBuilding, Attributes attributes, List<Ability> abilities,
+                      Equipment equipment, boolean blockRanged, boolean waxed, boolean speedRamp,
+                      boolean stationary,
+                      io.mczju.infernalclash.policy.TargetPolicy.Mode targeting,
+                      Double targetRadius, RampDamage rampDamage, boolean bomber,
+                      Double stopWhenTargetWithin, boolean building, Ray ray, boolean fangAttack,
+                      boolean oxidized) {
+            this(groups, placement, taunt, affectedByBuilding, attributes, abilities, equipment,
+                    blockRanged, waxed, speedRamp, stationary, targeting, targetRadius, rampDamage,
+                    bomber, stopWhenTargetWithin, building, ray, fangAttack, oxidized, Extra.NONE);
+        }
 
         /**
          * 规范构造器只做一件事：{@code targeting} 缺省补成 {@code SWITCH}。
@@ -595,6 +669,111 @@ public record Card(String id,
         public Summon {
             targeting = targeting == null
                     ? io.mczju.infernalclash.policy.TargetPolicy.Mode.SWITCH : targeting;
+            extra = extra == null ? Extra.NONE : extra;
+        }
+
+        /**
+         * ★★★ <b>1.1.0 新增的「卡级特殊机制」整块</b>（{@code summon.*} 下的几把键）。
+         *
+         * <h2>为什么打包成一块，而不是往 {@link Summon} 再加五个分量</h2>
+         * {@link Summon} 已经有 20 个分量、七层兼容构造；每加一格就再长一条构造链，
+         * 而这一批新增全是**只有一两张卡用**的开关 ⇒ 用一个可空块收拢：
+         * ① 新卡的接线一眼能看出「这是 1.1.0 加的」；② 旧卡的构造点一字不动；
+         * ③ 块内每一格都有明确的失败方向（不写 = 老行为）。
+         *
+         * <h2>逐格出处（全部来自 {@code docs/1.1卡牌.txt}，没有一格是我拟的）</h2>
+         * <ul>
+         *   <li>{@code powered}（{@code summon.powered}）—— <b>机动核弹</b>：「召唤一只闪电苦力怕」
+         *       ⇒ {@code Creeper#setPowered(true)}；</li>
+         *   <li>{@code hover}（{@code summon.hover}）—— <b>远古监视者</b>：
+         *       「会浮在距离地面 <b>1</b> 格的位置」（格数由卡给，本字段只是"浮多高"）；</li>
+         *   <li>{@code deploy}（{@code summon.deploy}）—— <b>远古监视者</b>：
+         *       「放置后需要 <b>4 秒</b>时间部署，这 4 秒内没有 ai，但是会播放蓄力的音效」；</li>
+         *   <li>{@code shadowStepRadius}（{@code summon.shadow-step}）—— <b>墨影窃贼</b>：
+         *       「每当其周围半径 <b>8</b> 格范围内的敌人数量由 0 变为 1 时，锁定该敌人，
+         *       并瞬移置该敌人的位置」；</li>
+         *   <li>{@code bomberDamage} / {@code bomberIntervalTicks} / {@code bomberParticle}
+         *       —— <b>美愿轰炸机</b>：「每 0.5 秒造成 <b>2</b> 点伤害」
+         *       （怨恨轰炸机那一格是用户早先裁定的 5 点 / 10 tick，写在 {@code BomberFlightService}）。
+         *       ★ 这三格把「轰炸机的伤害」从代码常量提到卡里；不写 ⇒ 沿用旧的 5 / 10 / FLAME。</li>
+         * </ul>
+         *
+         * @param powered           生成后给苦力怕上电（只对苦力怕生效，其它实体告警一次）
+         * @param hover             悬浮高度（格；{@code null} = 落地）。写了它 ⇒ 关重力并抬高
+         * @param deploy            部署期（{@code null} = 没有部署期，立刻可攻击）
+         * @param shadowStepRadius  0→1 敌人侦测半径（格；{@code null} = 没有这条能力）
+         * @param bomberDamage      轰炸机每次伤害（{@code null} = {@code BomberFlightService} 的默认 5）
+         * @param bomberIntervalTicks 轰炸机的伤害节拍（{@code null} = 默认 10）
+         * @param bomberParticle    轰炸机的尾迹/命中粒子名（{@code null} = 默认 {@code FLAME}）
+         */
+        public record Extra(boolean powered,
+                            Double hover,
+                            Deploy deploy,
+                            Double shadowStepRadius,
+                            Double bomberDamage,
+                            Integer bomberIntervalTicks,
+                            String bomberParticle) {
+
+            /** 全部缺省（= 1.0.0 的行为）。 */
+            public static final Extra NONE =
+                    new Extra(false, null, null, null, null, null, null);
+
+            /** 这一格是不是什么都没写（= 不需要走 1.1.0 的任何新分支）。 */
+            public boolean isEmpty() {
+                return !powered && hover == null && deploy == null
+                        && shadowStepRadius == null && bomberDamage == null
+                        && bomberIntervalTicks == null && bomberParticle == null;
+            }
+        }
+
+        /**
+         * ★ <b>部署期</b>（{@code summon.deploy}）。
+         *
+         * <p>出处（{@code docs/1.1卡牌.txt}，远古监视者）：「该单位放置后需要 <b>4 秒</b>时间部署，
+         * 这 4 秒内<b>没有 ai</b>，但是会<b>播放蓄力的音效</b>」。
+         *
+         * @param ticks 部署 tick 数（80 = 4 秒；取值 1~1200）
+         * @param sound 蓄力音效键（每 {@value #SOUND_PERIOD_TICKS} tick 播一次）；空白 = 不播
+         */
+        public record Deploy(int ticks, String sound) {
+
+            /** 蓄力音效的重播间隔（每 1 秒响一次 ⇒ 4 秒响 4 次，听起来是"在蓄力"）。 */
+            public static final int SOUND_PERIOD_TICKS = 20;
+
+            public Deploy {
+                if (ticks < 1 || ticks > 1200) {
+                    throw new IllegalArgumentException(
+                            "summon.deploy.ticks 必须在 1~1200 之间（实际 " + ticks + "）");
+                }
+            }
+
+            /** 有没有写音效。 */
+            public boolean hasSound() {
+                return sound != null && !sound.isBlank();
+            }
+        }
+
+        /**
+         * ★ <b>结网</b>（{@code summon.web}）。
+         *
+         * <p>出处（{@code docs/1.1卡牌.txt}，囚笼编织者）：「该蜘蛛会在<b>攻击目标处结网</b>，
+         * 网会存在 <b>8 秒</b>」＋「织网仿照 IG 的『webber』词条，写<b>生成、接管和删除</b>
+         * 蜘蛛网的逻辑…<b>除了岩浆，不要替换岩浆</b>」。
+         *
+         * <p>★ 用户 2026-10-26 追问后裁定：<b>只替换空气与「可替换方块」（草/花/水/雪层）</b>，
+         * 岩浆、石头、地板结构一律不碰 ⇒ 判据在纯类 {@code policy/WebBlockRule}。
+         *
+         * @param durationTicks 网的存在时长（160 = 8 秒；取值 1~1200）
+         */
+        public record Web(int durationTicks) {
+
+            public Web {
+                if (durationTicks < 1 || durationTicks > 1200) {
+                    throw new IllegalArgumentException(
+                            "summon.web.duration-ticks 必须在 1~1200 之间（实际 "
+                                    + durationTicks + "）");
+                }
+            }
         }
 
         /**
@@ -826,12 +1005,29 @@ public record Card(String id,
                             Map<String, Map<String, Integer>> enchantments,
                             Map<String, Map<String, String>> trims,
                             String color,
-                            List<String> groups) {
+                            List<String> groups,
+                            String body) {
 
         public Equipment {
             enchantments = enchantments == null ? Map.of() : Map.copyOf(enchantments);
             trims = trims == null ? Map.of() : Map.copyOf(trims);
             groups = groups == null ? List.of() : List.copyOf(groups);
+        }
+
+        /**
+         * 兼容构造（1.1.0 的 {@code equipment.body} 之前的九参形态）。
+         *
+         * <p>★ {@code body} 是给<b>快乐恶魂的挽具</b>用的（{@code EquipmentSlot.BODY}，
+         * 1.1.0「美愿轰炸机」：「它会戴着<b>浅绿色的挽具</b>登场」）。
+         * 不写 ⇒ {@code null} = 不碰那个槽位（其余 62 张卡行为一字未变）。
+         */
+        public Equipment(String helmet, String chestplate, String leggings, String boots,
+                         String mainHand,
+                         Map<String, Map<String, Integer>> enchantments,
+                         Map<String, Map<String, String>> trims, String color,
+                         List<String> groups) {
+            this(helmet, chestplate, leggings, boots, mainHand, enchantments, trims, color,
+                    groups, null);
         }
 
         /** 兼容构造：只要那 5 件材料名（没有附魔、没有纹饰、不染色、不限组）。 */
@@ -902,7 +1098,7 @@ public record Card(String id,
         public boolean isEmpty() {
             return helmet == null && chestplate == null && leggings == null && boots == null
                     && mainHand == null && enchantments.isEmpty() && trims.isEmpty()
-                    && color == null && groups.isEmpty();
+                    && color == null && groups.isEmpty() && body == null;
         }
 
         /** 盔甲件数（不含主手）—— 日志用（「铁套」是 4 件）。 */

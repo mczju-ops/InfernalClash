@@ -4,12 +4,15 @@ display-name: "<light_purple>虫群术师"
 flavor: "他一挥手，沙子里就爬满了东西。"
 description:
   - "<gray>召唤一只焦骸，穿整套紫水晶纹样白皮革装备。"
-  - "<gray>每 <white>5</white> 秒在自身周围召唤 <white>4</white> 只节肢动物：蠹虫 / 末影螨 / 蜜蜂各 <white>30%</white>、洞穴蜘蛛 <white>10%</white>。"
+  - "<gray>每 <white>2</white> 秒在自身周围召唤 <white>1</white> 只蠹虫。"
+  - "<gray>它手持长弓但<white>不再射箭</white>：每 <white>0.5</white> 秒打出一道<white>穿透射线</white>，"
+  - "<gray>对穿过的每个敌人造成 <white>2</white> 点伤害（<white>8</white> 格内）。"
 icon: SILVERFISH_SPAWN_EGG
 cost: 5
 cooldown-ticks: 400
 rarity: EPIC
 
+# ★ 1.1.0 第 2 条需求：持弓骷髅全部改射线 ⇒ 虫群术师的焦骸（PARCHED）同一份 `summon.ray`。
 summon:
   group:
     - entity: PARCHED
@@ -27,6 +30,11 @@ summon:
       helmet: { material: AMETHYST, pattern: DUNE }
       chestplate: { material: AMETHYST, pattern: VEX }
       leggings: { material: AMETHYST, pattern: COAST }
+  ray:
+    damage: 2
+    interval-ticks: 10
+    particle: PORTAL
+    range: 8
   abilities:
     - id: summon_periodically
       trigger: PERIODIC

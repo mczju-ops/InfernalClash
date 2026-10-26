@@ -25,6 +25,9 @@ summon:
   placement: GROUND_OR_SELF
   taunt: false
   affected-by-building: true
+  attributes:
+    # ★ 1.1.0 平衡调整：「所有拥有『优先攻击建筑』词条的召唤物获得 +1 点击退抗性」
+    knockback-resistance: 1.0
   equipment:
     groups: [PILLAGER]
     main-hand: CROSSBOW

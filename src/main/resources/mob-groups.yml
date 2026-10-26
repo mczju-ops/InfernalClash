@@ -20,6 +20,10 @@ groups:
   DROWNED:
     ai:
       mode: AUTO
+  # ★ 1.1.0「远古监视者」：远古守卫者（吃 WATER_BREATHING，见 cards/ancient_watcher.yml）
+  ELDER_GUARDIAN:
+    ai:
+      mode: AUTO
   ENDERMAN:
     ai:
       mode: AUTO
@@ -38,6 +42,10 @@ groups:
     ai:
       mode: AUTO
   GHAST:
+    ai:
+      mode: AUTO
+  # ★ 1.1.0「美愿轰炸机」：快乐恶魂（戴着浅绿色挽具）
+  HAPPY_GHAST:
     ai:
       mode: AUTO
   HUSK:
@@ -70,7 +78,15 @@ groups:
   SHULKER:
     ai:
       mode: AUTO
+  # ★ 1.1.0「巫术壁垒 / 淤泥之王」：史莱姆（体型由卡里的 size 指定）
+  SLIME:
+    ai:
+      mode: AUTO
   SKELETON:
+    ai:
+      mode: AUTO
+  # ★ 1.1.0「囚笼编织者」：蜘蛛（在攻击目标处结网）
+  SPIDER:
     ai:
       mode: AUTO
   STRAY:

@@ -4,12 +4,17 @@ display-name: "<blue>沙漠小队"
 flavor: "沙暴里走出来的，从不单打独斗。"
 description:
   - "<gray><white>一只尸壳</white>在前、<white>两只焦骸</white>在后。"
-  - "<gray>焦骸是骷髅类，会用弓远程攻击。"
+  - "<gray>尸壳手持铁剑、身穿铁套（铜护腿）；焦骸是骷髅类，会用射线远程攻击。"
 icon: SANDSTONE
 cost: 5
 cooldown-ticks: 400
 rarity: RARE
 
+# ★ 1.1.0 平衡调整（docs/1.1卡牌.txt）：
+#   「沙漠小队其中的尸壳现在手持铁剑，身穿『铁甲战士』卡牌同款铁套」
+#   ⇒ 装备只给 HUSK（铁甲战士那套：铁盔 / 铁胸 / 铜护腿 / 铁靴 + 铁剑）
+# ★ 1.1.0 第 2 条需求：持弓骷髅全部改射线 ⇒ 焦骸（PARCHED）也走 `summon.ray`
+#   （`groups: [PARCHED]` ⇒ 只给焦骸打射线，尸壳仍是近战）
 summon:
   group:
     - entity: HUSK
@@ -23,3 +28,16 @@ summon:
       spread: 1.0
   placement: GROUND_OR_SELF
   taunt: false
+  equipment:
+    groups: [HUSK]
+    helmet: IRON_HELMET
+    chestplate: IRON_CHESTPLATE
+    leggings: COPPER_LEGGINGS
+    boots: IRON_BOOTS
+    main-hand: IRON_SWORD
+  ray:
+    groups: [PARCHED]
+    damage: 2
+    interval-ticks: 10
+    particle: PORTAL
+    range: 8

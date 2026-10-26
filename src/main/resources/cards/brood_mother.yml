@@ -1,0 +1,41 @@
+id: brood_mother
+type: SUMMON
+display-name: "<green>虫群之母"
+flavor: "这种末影螨巨大的肚子里可能不止装了它的孩子，还有它配偶的遗骸。"
+description:
+  - "<gray>召唤一只体型巨大的末影螨（生命 <white>40</white>，体型 <white>×4</white>）。"
+  - "<gray>它在死后会分裂出 <white>8</white> 只小末影螨（每只 <white>4</white> 点生命）。"
+  - "<gray>优先攻击建筑。"
+icon: ENDERMITE_SPAWN_EGG
+cost: 4
+cooldown-ticks: 400
+rarity: COMMON
+
+# ★ 1.1.0（docs/1.1卡牌.txt）：
+#   「召唤一只体型巨大的末影螨，它在死后会分裂出 8 只小末影螨。优先攻击建筑。」
+#   技术细节：「大末影螨 scale*4.0，血量 40，小末影螨 scale*1.0，血量 4」
+summon:
+  group:
+    - entity: ENDERMITE
+      count: 1
+      offset: { forward: 0, right: 0 }
+  placement: GROUND_OR_SELF
+  taunt: false
+  # 「优先攻击建筑」⇒ 与攻城兽/炽足兽骑士同一维（summon.affected-by-building）
+  affected-by-building: true
+  attributes:
+    health: 40
+    scale: 4.0
+    # ★ 1.1.0 平衡调整：「所有拥有『优先攻击建筑』词条的召唤物获得 +1 点击退抗性」
+    knockback-resistance: 1.0
+  abilities:
+    # 死后分裂 8 只小末影螨（组级属性覆盖：scale 1.0 / health 4）
+    - id: summon_on_death
+      trigger: ON_DEATH
+      effects:
+        - type: SUMMON
+          group:
+            entity: ENDERMITE
+            count: 8
+            name: "小末影螨"
+            attributes: { scale: 1.0, health: 4 }

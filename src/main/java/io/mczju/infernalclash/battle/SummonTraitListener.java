@@ -78,6 +78,15 @@ public final class SummonTraitListener implements Listener {
     /** 末影人禁止传送。 */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onTeleport(EntityTeleportEvent event) {
+        // ★★★ 1.1.0（墨影窃贼）：「锁定该敌人，并**瞬移置该敌人的位置**」——
+        //   那一下是本插件自己的瞬移，必须能被拦传送的逻辑放行（否则"能力配了却从没发生"）。
+        //   ★ 一次性令牌：服务层在 teleport() 前后各调一次（前 allow / 后 revoke）⇒
+        //     即使事件没触发（版本差异），令牌也不会留到下一次原版传送。
+        if (ONCE_ALLOWED.remove(event.getEntity().getUniqueId())) {
+            logger.info("[IC] 放行本插件的一次瞬移：" + event.getEntity().getType()
+                    + "（墨影窃贼的「敌人由 0 变 1 就瞬移过去」）");
+            return;
+        }
         String cardId = registry.cardIdOf(event.getEntity());
         if (!SummonTraitRule.blocksTeleport(cardId)) {
             return;
@@ -85,6 +94,30 @@ public final class SummonTraitListener implements Listener {
         event.setCancelled(true);
         logger.fine("[IC] 末影人禁止传送（" + event.getEntity().getUniqueId() + "）");
     }
+
+    /**
+     * ★ <b>放行这个实体的下一次传送</b>（1.1.0 墨影窃贼）。
+     *
+     * <p>★ 为什么用一次性令牌而不是"按卡 id 白名单"：末影人禁止传送是**对原版随机传送**的禁止，
+     * 而我们自己的「瞬移置敌人位置」必须能穿透它 —— 两者是**同一种实体、同一张卡**，
+     * 靠卡 id 区分不了。令牌的生命周期只有一次 {@code teleport()} 调用。
+     */
+    public static void allowNextTeleport(java.util.UUID entityId) {
+        if (entityId != null) {
+            ONCE_ALLOWED.add(entityId);
+        }
+    }
+
+    /** ★ 撤销令牌（{@code teleport()} 之后无条件调用 —— 事件没触发时不留后门）。 */
+    public static void revokeTeleportAllowance(java.util.UUID entityId) {
+        if (entityId != null) {
+            ONCE_ALLOWED.remove(entityId);
+        }
+    }
+
+    /** 一次性放行令牌（键 = 实体 UUID）。 */
+    private static final java.util.Set<java.util.UUID> ONCE_ALLOWED =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     // ------------------------------------------------------------------ 唤魔者
 

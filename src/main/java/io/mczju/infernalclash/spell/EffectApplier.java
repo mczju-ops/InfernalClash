@@ -9,7 +9,9 @@ import io.mczju.infernalclash.card.SummonSpawner;
 import io.mczju.infernalclash.config.MapReader;
 import io.mczju.infernalclash.match.LifecycleTasks;
 import io.mczju.infernalclash.match.MatchService;
+import io.mczju.infernalclash.match.OwnershipTable;
 import io.mczju.infernalclash.match.Side;
+import io.mczju.infernalclash.match.UnitRegistry;
 import io.mczju.infernalclash.policy.Rarity;
 import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
@@ -305,6 +307,21 @@ public final class EffectApplier {
                 case COOLDOWN_REDUCTION -> cooldownReduction(effect, context, explicitTasks, log);
                 // ★★★ 2026-10-21（唤魔者）：在**目标脚下**召唤原版「尖牙」实体。
                 case SPAWN_FANGS -> spawnFangs(context, target, origin, log);
+                // ★★★ 1.1.0（大旋风）：朝 origin 牵引 + 每秒伤害（**不读击退抗性**）。
+                case PULL -> pull(effect, context, target, origin, explicitTasks, log);
+                // ★★★ 1.1.0（凋灵领域）：持续区域伤害（一次施放只跑一份任务）。
+                case AREA_DAMAGE -> areaDamage(effect, context, origin, explicitTasks, log);
+                // ★★★ 1.1.0（囚笼编织者）：在目标脚下结网（到期 / 收尾都会还原）。
+                case PLACE_WEB -> placeWeb(effect, context, target, explicitTasks, log);
+                // ★★ 1.1.0「援军」：与回响同一个套路 —— 状态在 CardCastListener。
+                case REINFORCEMENT -> {
+                    log.warning("[IC] 效果 REINFORCEMENT 只能由 CardCastListener 处理"
+                            + "（它要读 CardCooldowns 并清客户端遮罩），卡 " + context.cardId()
+                            + " 的这条效果被跳过。用法：给这张卡的 YAML 写"
+                            + " spell.effects: [{ type: REINFORCEMENT }] 并让它走卡牌施放入口，"
+                            + "不要在 abilities 里用它。");
+                    yield false;
+                }
                 // ★★ 2026-10-19「回响」：复读**不在这一层结算**（它要过落点 / 半场 / 召唤生成，
                 //   那些都在 `game/CardCastListener`）。`CardCastListener` 会在**进法术管线之前**
                 //   就把它接住 ⇒ 正常路径永远到不了这里。
@@ -335,6 +352,7 @@ public final class EffectApplier {
     /** {@code DAMAGE}：{@code target.damage(amount, caster 实体)}；{@code damage-type} 不支持但会警告一次。 */
     private static boolean damage(Spell.Effect effect, Context context, LivingEntity target, Logger log) {
         double amount = EffectParams.requireNumber(effect, "amount");
+        amount = adjustedDamage(effect, target, amount, log);
         if (!alive(target)) {
             log.warning("[IC] 伤害跳过：目标已失效/已死亡（卡 " + context.cardId() + "）");
             return false;
@@ -373,9 +391,299 @@ public final class EffectApplier {
         return true;
     }
 
+    /**
+     * ★★★ <b>{@code PULL}：把目标朝 {@code origin} 牵引并周期造成伤害</b>
+     * （1.1.0「大旋风」）。
+     *
+     * <h2>出处（{@code docs/1.1卡牌.txt}，逐字）</h2>
+     * 「将半径 6 格内的所有敌人向法术释放的位置牵引，<b>每秒造成 2 点伤害，持续 2 秒</b>」＋
+     * 「<b>牵引需要能够作用于带击退抗性的召唤物</b>」。
+     *
+     * <h2>★ 为什么**不**调 {@code immuneToDisplacement}</h2>
+     * 那正是用户点名要绕开的判据（他要求"带击退抗性的也能拉动"）。
+     * 目标物（防御塔 / 信标）在配置层就被排除（{@code spell.scope: SUMMONS}），
+     * 玩家另有"玩家不进账本"的结构保证 ⇒ 这里只留一道**防御性**拦玩家（C13）。
+     *
+     * <h2>★ 为什么每 tick 重申速度</h2>
+     * 与 {@code PUSH} 同一个理由：原版每 tick 把速度往 0 收，只给一次速度推不动。
+     * ★ 只写**水平**分量（保留目标自己的 Y 速度）：把飞行单位硬拽下来属于"额外玩法"，
+     * 用户没要求。
+     */
+    private static boolean pull(Spell.Effect effect, Context context, LivingEntity target,
+                                Location origin, LifecycleTasks explicitTasks, Logger log) {
+        int duration = clampDuration(EffectParams.requireInt(effect, "duration-ticks"),
+                "PULL 的 duration-ticks", log);
+        int interval = Math.max(1, EffectParams.optionalInt(effect, "interval-ticks", 20));
+        double amount = EffectParams.optionalNumber(effect, "amount", 0.0);
+        double strength = EffectParams.optionalNumber(effect, "strength", 0.35);
+        if (!alive(target)) {
+            log.warning("[IC] 牵引跳过：目标已失效/已死亡（卡 " + context.cardId() + "）");
+            return false;
+        }
+        if (target instanceof Player) {
+            log.warning("[IC] 牵引跳过：目标是玩家（C13 / R42，卡 " + context.cardId() + "）");
+            return false;
+        }
+        if (origin == null || origin.getWorld() == null || target.getWorld() == null
+                || !origin.getWorld().equals(target.getWorld())) {
+            log.warning("[IC] 牵引跳过：源点与目标不在同一个世界（卡 " + context.cardId() + "）");
+            return false;
+        }
+        LifecycleTasks tasks = explicitTasks != null ? explicitTasks : tasksOf(context);
+        Plugin plugin = context.plugin();
+        if (tasks == null || plugin == null) {
+            log.warning("[IC] 牵引跳过：没有可用的生命周期任务表/插件实例（卡 "
+                    + context.cardId() + "）—— 周期任务绝不允许挂在无人回收的地方");
+            return false;
+        }
+        final UUID entityId = target.getUniqueId();
+        final Location center = snapshot(origin, log);
+        if (center == null) {
+            return false;
+        }
+        final int[] elapsed = {0};
+        final int[] nextDamage = {interval};
+        final BukkitTask[] handle = new BukkitTask[1];
+        handle[0] = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            try {
+                if (elapsed[0]++ >= duration) {
+                    handle[0].cancel();
+                    return;
+                }
+                if (!(resolveEntity(entityId) instanceof LivingEntity current)
+                        || current.isDead() || !current.isValid()) {
+                    handle[0].cancel();
+                    return;
+                }
+                Vector towards = center.toVector().subtract(current.getLocation().toVector());
+                Vector horizontal = new Vector(towards.getX(), 0.0, towards.getZ());
+                if (horizontal.lengthSquared() > 1.0e-6) {
+                    horizontal.normalize().multiply(strength);
+                    Vector velocity = current.getVelocity();
+                    current.setVelocity(new Vector(horizontal.getX(), velocity.getY(),
+                            horizontal.getZ()));
+                }
+                if (amount > 0.0 && elapsed[0] >= nextDamage[0]) {
+                    nextDamage[0] += interval;
+                    current.damage(amount);
+                }
+            } catch (Throwable t) {
+                warnOnce("pull-run:" + entityId, log, "[IC] 牵引执行失败（" + entityId
+                        + "）：" + t + "，这一条牵引提前结束（不影响别的目标）");
+                try {
+                    handle[0].cancel();
+                } catch (Throwable ignored) {
+                    // 已取消 ⇒ 无所谓
+                }
+            }
+        }, 0L, 1L);
+        tasks.track(handle[0]);
+        return true;
+    }
+
+    /**
+     * ★★★ <b>{@code AREA_DAMAGE}：持续区域伤害</b>（1.1.0「凋灵领域」）。
+     *
+     * <h2>出处（{@code docs/1.1卡牌.txt}，逐字）</h2>
+     * 「持续 <b>8</b> 秒，<b>每秒</b>对半径 <b>5</b> 格范围内所有召唤物造成 <b>5</b> 点伤害」＋
+     * 「<b>不需要任何药水效果</b>。范围使用凋零粒子环＋范围内持续生成凋零药水云，
+     * 但<b>不会为敌人挂上凋零效果</b>，只造成伤害」。
+     *
+     * <h2>★ 为什么是"一份任务、每拍从账本重收目标"</h2>
+     * 这才能表达"领域"：施放后才走进圈里的单位也会挨打。
+     * 若改成"施放时圈里每个人各跑一份任务"，那就变成"只打当时那些人"，
+     * 而且同一个 5 人圈会跑 5 份、伤害翻 5 倍（见 {@code EffectScope#runsOncePerCast}）。
+     *
+     * <h2>范围口径</h2>
+     * 与其它地面法术一致：<b>水平距离（X/Z）</b>≤ {@code radius}。这样飞在头顶的空中单位
+     * 只要投影在圈里就会挨打（与射线那条同一口径）。
+     */
+    private static boolean areaDamage(Spell.Effect effect, Context context, Location origin,
+                                      LifecycleTasks explicitTasks, Logger log) {
+        int duration = clampDuration(EffectParams.requireInt(effect, "duration-ticks"),
+                "AREA_DAMAGE 的 duration-ticks", log);
+        int interval = clampDuration(EffectParams.requireInt(effect, "interval-ticks"),
+                "AREA_DAMAGE 的 interval-ticks", log);
+        double amount = EffectParams.requireNumber(effect, "amount");
+        int radius = EffectParams.requireInt(effect, "radius");
+        UnitRegistry registry = registryOrNull();
+        if (registry == null) {
+            log.warning("[IC] 区域伤害跳过：没有可用的归属账本（卡 " + context.cardId()
+                    + "）—— 铁律 10：绝不查世界凑候选");
+            return false;
+        }
+        if (origin == null || origin.getWorld() == null) {
+            log.warning("[IC] 区域伤害跳过：源点没有世界（卡 " + context.cardId() + "）");
+            return false;
+        }
+        LifecycleTasks tasks = explicitTasks != null ? explicitTasks : tasksOf(context);
+        Plugin plugin = context.plugin();
+        if (tasks == null || plugin == null) {
+            log.warning("[IC] 区域伤害跳过：没有可用的生命周期任务表/插件实例（卡 "
+                    + context.cardId() + "）");
+            return false;
+        }
+        final Location center = snapshot(origin, log);
+        if (center == null) {
+            return false;
+        }
+        final String matchId = context.matchId();
+        final Side side = context.side();
+        final int[] elapsed = {0};
+        final BukkitTask[] handle = new BukkitTask[1];
+        final java.util.Random random = new java.util.Random();
+        handle[0] = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            try {
+                if (elapsed[0]++ >= duration) {
+                    handle[0].cancel();
+                    return;
+                }
+                spawnWitherFieldFx(center, radius, elapsed[0] % interval == 0, random, log);
+                if (elapsed[0] % interval != 0) {
+                    return;
+                }
+                int hit = 0;
+                for (UUID id : registry.tracked(matchId)) {
+                    OwnershipTable.Owner owner = registry.table().owner(id);
+                    if (owner == null || owner.side() == null || owner.side() == side) {
+                        continue;
+                    }
+                    Entity raw = Bukkit.getEntity(id);
+                    if (!(raw instanceof LivingEntity living) || living.isDead()
+                            || !living.isValid()) {
+                        continue;
+                    }
+                    Location at = living.getLocation();
+                    if (at.getWorld() == null || !at.getWorld().equals(center.getWorld())) {
+                        continue;
+                    }
+                    double horizontal = Math.hypot(at.getX() - center.getX(),
+                            at.getZ() - center.getZ());
+                    if (horizontal > radius) {
+                        continue;
+                    }
+                    living.damage(amount);
+                    hit++;
+                }
+                log.info("[IC] 区域伤害结算（" + context.cardId() + "）：半径 " + radius
+                        + " 格内命中 " + hit + " 个敌方单位，各 " + amount + " 点");
+            } catch (Throwable t) {
+                warnOnce("area-run:" + context.cardId(), log, "[IC] 区域伤害执行失败（卡 "
+                        + context.cardId() + "）：" + t + "，这一次结算跳过");
+            }
+        }, 0L, 1L);
+        tasks.track(handle[0]);
+        return true;
+    }
+
+    /** 凋灵领域的观感：脚下药水云 + 每秒一圈白灰（纯观感，任何异常都吞掉）。 */
+    private static void spawnWitherFieldFx(Location center, int radius, boolean ringBeat,
+                                           java.util.Random random, Logger log) {
+        try {
+            org.bukkit.World world = center.getWorld();
+            if (world == null) {
+                return;
+            }
+            double angle = random.nextDouble() * Math.PI * 2.0;
+            double distance = Math.sqrt(random.nextDouble()) * radius;
+            world.spawnParticle(org.bukkit.Particle.NOXIOUS_GAS_CLOUD,
+                    center.getX() + Math.cos(angle) * distance,
+                    center.getY() + 0.4 + random.nextDouble() * 1.2,
+                    center.getZ() + Math.sin(angle) * distance,
+                    3, 0.2, 0.2, 0.2, 0.0);
+            if (!ringBeat) {
+                return;
+            }
+            for (int i = 0; i < 48; i++) {
+                double a = (Math.PI * 2.0 / 48) * i;
+                world.spawnParticle(org.bukkit.Particle.WHITE_ASH,
+                        center.getX() + Math.cos(a) * radius,
+                        center.getY() + 0.3,
+                        center.getZ() + Math.sin(a) * radius,
+                        2, 0.05, 0.05, 0.05, 0.0);
+            }
+        } catch (Throwable t) {
+            warnOnce("area-fx", log, "[IC] 凋灵领域的粒子撒不出去（只影响观感）：" + t);
+        }
+    }
+
+    /**
+     * ★★★ <b>{@code PLACE_WEB}：在目标脚下结蜘蛛网</b>（1.1.0「囚笼编织者」）。
+     *
+     * <p>实际动作全部在 {@link WebField}（生成 → 登记 → 到期还原 / 收尾强制还原），
+     * 判据（能不能替换这一格）在纯类 {@code policy/WebBlockRule}。
+     */
+    private static boolean placeWeb(Spell.Effect effect, Context context, LivingEntity target,
+                                    LifecycleTasks explicitTasks, Logger log) {
+        int duration = clampDuration(EffectParams.requireInt(effect, "duration-ticks"),
+                "PLACE_WEB 的 duration-ticks", log);
+        if (target == null || target.getLocation().getWorld() == null) {
+            log.warning("[IC] 结网跳过：没有目标（卡 " + context.cardId() + "）");
+            return false;
+        }
+        return WebField.place(context.matchId(), target, duration,
+                explicitTasks != null ? explicitTasks : tasksOf(context), context.plugin(), log);
+    }
+
+    /**
+     * ★★★ <b>伤害的两条 1.1.0 修正</b>（{@code amount} 之外的两个可选键）。
+     *
+     * <h2>① {@code bonus-vs-type} + {@code bonus-vs-amount}（海王 · 海龟）</h2>
+     * 出处（{@code docs/1.1卡牌.txt}）：「<b>对海龟伤害 +1000 点（还原原版雷暴特性）</b>」。
+     * 原版特性 = **闪电劈到海龟直接秒杀**（Wiki：{@code Thunderstorm#Turtle}）⇒
+     * 我们不做"特殊逻辑"，只把伤害加上去，于是"海龟被海王打到就死"。
+     * ★ 用户 2026-10-26 追问后裁定：<b>海王的所有伤害</b>（登场 AoE ＋ 周期雷击）都算
+     * ⇒ 两个 {@code DAMAGE} 效果各写一份这两个键（那不是分叉，是同一张卡的两条伤害）。
+     *
+     * <h2>② {@code building-multiplier}（地壳震击）</h2>
+     * 出处：「对 5 格范围内的目标造成 15 点伤害，<b>对建筑造成双倍伤害</b>」＋
+     * 用户追加说明：「建筑指所有建筑卡牌；<b>防御塔、信标都算建筑</b>」。
+     * 判据 = 账本上的 {@link UnitRegistry#building(Entity)}（它同时覆盖目标物与 6 张建筑卡），
+     * <b>不在这里另起一个"是不是塔"的分支</b>。
+     *
+     * <p>★ 失败方向：读不到账本（离线夹具 / 探针）⇒ <b>不翻倍</b>（= 只按 {@code amount}），
+     * 绝不凭空翻倍；实体类型名对不上 ⇒ 不加成（同样是"少做"而不是"多做"）。
+     */
+    private static double adjustedDamage(Spell.Effect effect, LivingEntity target, double amount,
+                                         Logger log) {
+        double value = amount;
+        String bonusType = EffectParams.optionalText(effect, "bonus-vs-type", null);
+        if (bonusType != null && !bonusType.isBlank() && target != null
+                && target.getType().name().equalsIgnoreCase(bonusType.trim())) {
+            double bonus = EffectParams.optionalNumber(effect, "bonus-vs-amount", 0.0);
+            if (bonus > 0.0) {
+                value += bonus;
+                log.info("[IC] 伤害加成：对 " + target.getType() + " 额外 " + bonus
+                        + " 点（" + amount + " → " + value + "，bonus-vs-type=" + bonusType + "）");
+            }
+        }
+        Double multiplier = containsKey(effect, "building-multiplier")
+                ? EffectParams.optionalNumber(effect, "building-multiplier", 1.0) : null;
+        if (multiplier != null && multiplier != 1.0 && target != null) {
+            UnitRegistry registry = registryOrNull();
+            boolean building;
+            try {
+                building = registry != null && registry.building(target);
+            } catch (Throwable t) {
+                building = false;   // 读不到 ⇒ 不翻倍（失败方向 = 少做）
+            }
+            if (building) {
+                value *= multiplier;
+                log.info("[IC] 建筑加伤：目标是建筑 ⇒ " + amount + " × " + multiplier
+                        + " = " + value + "（" + target.getType() + "）");
+            }
+        }
+        return value;
+    }
+
+    /** 全局安装的召唤入口手里的账本（没装 ⇒ {@code null}）。 */
+    private static UnitRegistry registryOrNull() {
+        SummonSpawner installed = spawner;
+        return installed == null ? null : installed.registry();
+    }
+
     /** 这条效果要不要"先飞一颗火球"（`projectile: FIREBALL`）。 */
-    private static boolean wantsProjectile(Spell.Effect effect) {
-        String kind = EffectParams.optionalText(effect, "projectile", null);
+    private static boolean wantsProjectile(Spell.Effect effect) {        String kind = EffectParams.optionalText(effect, "projectile", null);
         return kind != null && kind.equalsIgnoreCase("FIREBALL");
     }
 
@@ -894,7 +1202,11 @@ public final class EffectApplier {
             log.warning("[IC] 推动跳过：目标已失效/已死亡（卡 " + context.cardId() + "）");
             return false;
         }
-        if (immuneToDisplacement(target, "推动", log)) {
+        // ★★★ 1.1.0（用户逐字）：「**狂风推进不再影响带有击退抗性的召唤物**」
+        //   ⇒ 判据从 `immuneToDisplacement`（只有满 1.0 免疫）换成 `DisplacementRule#pushable`
+        //     （**带一点点抗性就不推**）。★ 只收紧 PUSH —— 火球击退（KNOCKBACK）仍按老口径，
+        //     因为用户只点了狂风推进（见 DisplacementRule#pushable 的 javadoc）。
+        if (immuneToPush(target, log)) {
             return false;
         }
         Vector direction = horizontalDirection(origin, target);
@@ -1678,6 +1990,33 @@ public final class EffectApplier {
     }
 
     /**
+     * ★★★ <b>「狂风推进」推不推得动它</b>（1.1.0 收紧口径，见
+     * {@link io.mczju.infernalclash.policy.DisplacementRule#pushable}）。
+     *
+     * <p>与 {@link #immuneToDisplacement} 的差别只有阈值：本方法在
+     * <b>击退抗性 &gt; 0</b> 时就判"不推"（用户逐字：「<b>狂风推进不再影响带有击退抗性的召唤物</b>」），
+     * 而不是等到满 1.0。★ 读不到属性 ⇒ 按"能推"处理（失败方向 = 照常生效）。
+     */
+    private static boolean immuneToPush(LivingEntity target, Logger log) {
+        AttributeInstance instance;
+        try {
+            instance = target.getAttribute(Attribute.KNOCKBACK_RESISTANCE);
+        } catch (Throwable t) {
+            return false;
+        }
+        if (instance == null) {
+            return false;
+        }
+        double resistance = instance.getValue();
+        if (io.mczju.infernalclash.policy.DisplacementRule.pushable(resistance)) {
+            return false;
+        }
+        log.info("[IC] 推动跳过：" + target.getType() + " 带有击退抗性（" + resistance
+                + "）—— 1.1.0 起「狂风推进不再影响带有击退抗性的召唤物」");
+        return true;
+    }
+
+    /**
      * ★★ <b>目标完全免疫位移吗</b>（推动 / 击退）—— 2026-10-17 第十三轮收尾新增。
      *
      * <h2>为什么需要这一格（而不是只把塔的属性设成 1.0）</h2>
@@ -1777,7 +2116,11 @@ public final class EffectApplier {
 
     private static Map<Spell.EffectType, Set<String>> allowedKeys() {
         Map<Spell.EffectType, Set<String>> map = new EnumMap<>(Spell.EffectType.class);
-        map.put(Spell.EffectType.DAMAGE, Set.of("amount", "damage-type", "projectile"));
+        map.put(Spell.EffectType.DAMAGE, Set.of("amount", "damage-type", "projectile",
+                // ★ 1.1.0（海王）：对某一种原版生物额外加伤（「对海龟伤害 +1000」）
+                "bonus-vs-type", "bonus-vs-amount",
+                // ★ 1.1.0（地壳震击）：对建筑（含防御塔 / 信标）翻倍
+                "building-multiplier"));
         map.put(Spell.EffectType.HEAL, Set.of("amount", "full"));
         map.put(Spell.EffectType.POTION, Set.of("effect", "amplifier", "duration-ticks"));
         map.put(Spell.EffectType.ATTRIBUTE, Set.of("attribute", "amount", "duration-ticks"));
@@ -1808,6 +2151,16 @@ public final class EffectApplier {
         map.put(Spell.EffectType.COOLDOWN_REDUCTION, Set.of("percent", "duration-ticks"));
         // ★ 2026-10-21「尖牙」：无参数（尖牙长在目标脚下；个数 = 目标个数）
         map.put(Spell.EffectType.SPAWN_FANGS, Set.of());
+        // ★★★ 1.1.0（大旋风）：牵引 + 每秒伤害
+        map.put(Spell.EffectType.PULL, Set.of("duration-ticks", "amount", "interval-ticks",
+                "strength"));
+        // ★★★ 1.1.0（凋灵领域）：持续区域伤害（一次施放一份任务）
+        map.put(Spell.EffectType.AREA_DAMAGE, Set.of("duration-ticks", "interval-ticks", "amount",
+                "radius"));
+        // ★★★ 1.1.0（囚笼编织者）：在目标脚下结网
+        map.put(Spell.EffectType.PLACE_WEB, Set.of("duration-ticks"));
+        // ★★★ 1.1.0（援军）：无参数（状态在 CardCastListener / ReinforcementMemory）
+        map.put(Spell.EffectType.REINFORCEMENT, Set.of());
         return Collections.unmodifiableMap(map);
     }
 

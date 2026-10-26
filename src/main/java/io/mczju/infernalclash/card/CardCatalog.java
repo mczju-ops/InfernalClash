@@ -324,7 +324,9 @@ public final class CardCatalog {
                     "嘲讽没有等级（2026-10-15 用户裁定「只有嘲讽和无嘲讽的区别」）：请改用布尔 taunt");
         }
 
-        int cost = ConfigReader.requireInt(fileName, yaml, "cost", 1, MAX_COST);
+        // ★ ★★ 1.1.0：`cost` 允许 **0**（用户逐字：「烈焰精灵改为**0费**召唤1只」）。
+        //   0 = 不消耗经验；`CardCharge`/`chargeXp` 对 0 费的既有行为就是"不扣、放行"。
+        int cost = ConfigReader.requireInt(fileName, yaml, "cost", 0, MAX_COST);
         int cooldownTicks = ConfigReader.requireInt(fileName, yaml, "cooldown-ticks", 0, MAX_COOLDOWN_TICKS);
 
         Card.Summon summon = null;
@@ -548,6 +550,26 @@ public final class CardCatalog {
     private static final java.util.regex.Pattern MOUNT_NAME_PATTERN =
             java.util.regex.Pattern.compile("[A-Z][A-Z0-9_]*");
 
+    /**
+     * ★★★ <b>解析 {@code group[].abilities}</b>（1.1.0 新增，巫术壁垒）。
+     *
+     * <p>★ 为什么"逐组"：那张卡是「史莱姆 ＋ 骑手」，两者能力完全不同
+     * （史莱姆：40 血 + 凋零 I + 不能分裂；骑手：24 血 + 每 3 秒一颗 20 点火球），
+     * 而卡级 {@code summon.abilities} 会同时挂到两支身上 ⇒ 史莱姆也会放火球。
+     *
+     * <p>★ 实现上直接复用 {@link #parseAbilities} —— 用一个只装了这一格的内存配置包一层，
+     * 从而**不出现第二份能力解析器**（这份键表/校验/报错文案只有一处）。
+     */
+    private static List<Card.Ability> parseGroupAbilities(String file, Map<?, ?> entry) {
+        if (!MapReader.isSet(entry, "abilities")) {
+            return List.of();
+        }
+        org.bukkit.configuration.MemoryConfiguration section =
+                new org.bukkit.configuration.MemoryConfiguration();
+        section.set("abilities", entry.get("abilities"));
+        return parseAbilities(file, section);
+    }
+
     private static Card.Summon parseSummon(String file, ConfigurationSection root,
                                           MobGroupCatalog mobGroups) {
         ConfigurationSection summon = ConfigReader.requireSection(file, root, "summon");
@@ -582,13 +604,22 @@ public final class CardCatalog {
             Integer lifetimeTicks = MapReader.isSet(entry, "lifetime-ticks")
                     ? MapReader.requireInt(file, entry, path, "lifetime-ticks", 1, 72000)
                     : null;
+            // ★★★ 1.1.0（巫术壁垒）：「只有史莱被算作建筑」⇒ 逐组覆盖卡级 `summon.building`。
+            //   ★ null = 跟随卡级（其余 62 张卡行为一字未变）。
+            Boolean groupBuilding = MapReader.isSet(entry, "building")
+                    ? MapReader.requireBoolean(file, entry, path, "building")
+                    : null;
             groups.add(new Card.Group(entity, count, forward, right,
                     MobGroupCatalog.spreadOf(file, entry, path),
                     readGroupAttributes(file, entry, path),
                     optionalMount(file, entry, path),
                     rowSpec,
                     formation(file, entry, path, count, rowSpec),
-                    lifetimeTicks));
+                    lifetimeTicks,
+                    groupBuilding,
+                    // ★★★ 1.1.0（巫术壁垒）：逐组能力 —— 史莱姆与骑手的能力完全不同，
+                    //   卡级 abilities 会把两边都挂上（烈焰熔炉里 SUMMON 效果的 group 早就有同一格）。
+                    parseGroupAbilities(file, entry)));
         }
         validateMounts(file, groups);
 
@@ -700,9 +731,75 @@ public final class CardCatalog {
         //   `summon.oxidized: true` ⇒ 召唤时把铜傀儡的风化状态设成 OXIDIZED（涂蜡仍由 `waxed` 管）。
         boolean oxidized = summon.isSet("oxidized")
                 && ConfigReader.requireBoolean(file, summon, "oxidized");
+        // ★★★ 1.1.0：卡级特殊机制（见 Card.Summon.Extra 的 javadoc，逐格有出处）。
+        Card.Summon.Extra extra = parseExtra(file, summon);
         return new Card.Summon(groups, placement, taunt, affectedByBuilding, attributes, abilities,
                 equipment, blockRanged, waxed, speedRamp, stationary, targeting, targetRadius,
-                rampDamage, bomber, stopWhenTargetWithin, building, ray, fangAttack, oxidized);
+                rampDamage, bomber, stopWhenTargetWithin, building, ray, fangAttack, oxidized,
+                extra);
+    }
+
+    /**
+     * ★★★ <b>解析 1.1.0 的「卡级特殊机制」</b>（{@code summon.powered} / {@code hover} /
+     * {@code deploy} / {@code web} / {@code shadow-step} / {@code bomber-*}）。
+     *
+     * <h2>口径（与 {@code summon.ray} 同一套严格风格）</h2>
+     * <ul>
+     *   <li>每一格都<b>可选</b>；不写 ⇒ {@link Card.Summon.Extra#NONE}（= 1.0.0 的行为）；</li>
+     *   <li>块内键名<b>严格校验未知键</b>（写错一个字母就拒绝启动 —— 静默失效最难查）；</li>
+     *   <li>数值有上下界（时长 1~1200 tick、悬浮 0.1~8 格、半径 1~64 格、伤害 0.5~100）。</li>
+     * </ul>
+     */
+    private static Card.Summon.Extra parseExtra(String file, ConfigurationSection summon) {
+        boolean powered = summon.isSet("powered")
+                && ConfigReader.requireBoolean(file, summon, "powered");
+        Double hover = summon.isSet("hover")
+                ? ConfigReader.requireDouble(file, summon, "hover", 0.1, 8.0)
+                : null;
+        Double shadowStep = summon.isSet("shadow-step")
+                ? ConfigReader.requireDouble(file, summon, "shadow-step", 1.0, 64.0)
+                : null;
+        Card.Summon.Deploy deploy = null;
+        if (summon.isSet("deploy")) {
+            ConfigurationSection section = ConfigReader.requireSection(file, summon, "deploy");
+            rejectUnknownKeys(file, section, "summon.deploy", Set.of("ticks", "sound"));
+            deploy = new Card.Summon.Deploy(
+                    ConfigReader.requireInt(file, section, "ticks", 1, 1200),
+                    section.isSet("sound")
+                            ? ConfigReader.requireString(file, section, "sound")
+                            : null);
+        }
+
+        Double bomberDamage = summon.isSet("bomber-damage")
+                ? ConfigReader.requireDouble(file, summon, "bomber-damage", 0.5, 100.0)
+                : null;
+        Integer bomberInterval = summon.isSet("bomber-interval-ticks")
+                ? ConfigReader.requireInt(file, summon, "bomber-interval-ticks", 1, 200)
+                : null;
+        String bomberParticle = summon.isSet("bomber-particle")
+                ? ConfigReader.requireString(file, summon, "bomber-particle")
+                : null;
+        if (bomberParticle != null) {
+            try {
+                org.bukkit.Particle.valueOf(bomberParticle.trim().toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                throw new ConfigError(file, "summon.bomber-particle",
+                        "不是合法的粒子名：" + bomberParticle);
+            }
+        }
+        return new Card.Summon.Extra(powered, hover, deploy, shadowStep, bomberDamage,
+                bomberInterval, bomberParticle);
+    }
+
+    /** 块内的未知键一律拒绝（同 {@code summon.ray} 的做法）。 */
+    private static void rejectUnknownKeys(String file, ConfigurationSection section,
+                                          String path, Set<String> allowed) {
+        for (String key : section.getKeys(false)) {
+            if (!allowed.contains(key)) {
+                throw new ConfigError(file, path + "." + key,
+                        "未知键（允许的：" + String.join(" / ", new TreeSet<>(allowed)) + "）");
+            }
+        }
     }
 
     /**
@@ -971,7 +1068,9 @@ public final class CardCatalog {
         }
         ConfigurationSection section = ConfigReader.requireSection(file, summon, "equipment");
         Set<String> allowed = new TreeSet<>(List.of("helmet", "chestplate", "leggings", "boots",
-                "main-hand", "enchantments", "trim", "color", "groups"));
+                "main-hand", "enchantments", "trim", "color", "groups",
+                // ★ 1.1.0（美愿轰炸机）：快乐恶魂的挽具（EquipmentSlot.BODY）
+                "body"));
         for (String key : section.getKeys(false)) {
             if (!allowed.contains(key)) {
                 throw new ConfigError(file, section.getCurrentPath() + "." + key,
@@ -986,7 +1085,8 @@ public final class CardCatalog {
                 parseEnchantments(file, section),
                 parseTrims(file, section),
                 parseLeatherColor(file, section),
-                parseEquipmentGroups(file, section));
+                parseEquipmentGroups(file, section),
+                equipmentMaterial(file, section, "body"));
     }
 
     /**
@@ -1803,7 +1903,13 @@ public final class CardCatalog {
                 spellRefs.add(new SpellRef(effect.text("spell"), file, "spell.effects[" + i + "].spell"));
             }
         }
-        return new Spell(targeting, shape, effects, fx, parseSelect(file, spell));
+        // ★★★ 1.1.0（大旋风 / 凋灵领域）：`spell.scope` —— 形状覆盖到的敌方实体里准哪几类进来。
+        //   缺省 `ALL`（含目标物载体）⇒ 既有 15 张法术卡行为一字未变。
+        Spell.Scope scope = Spell.Scope.ALL;
+        if (spell.isSet("scope")) {
+            scope = requireEnum(file, spell, "scope", Spell.Scope.class);
+        }
+        return new Spell(targeting, shape, effects, fx, parseSelect(file, spell), scope);
     }
 
     /**
@@ -1905,13 +2011,11 @@ public final class CardCatalog {
                 throw new ConfigError(file, fx.getCurrentPath() + ".block",
                         "" + block + " 不是合法的原版方块/材料名（要 Material 的常量名，全大写，例如 DIRT / GRAVEL）");
             }
-            // ★ 同时写了 particle 就明说：block 优先，particle 不生效（不静默忽略一个键）
-            if (particle != null) {
-                throw new ConfigError(file, fx.getCurrentPath(),
-                        "block 与 particle 只给一个 —— 写了 block 就走方块粒子（Particle.BLOCK + BlockData），"
-                                + "particle 不会生效。现在两个都写了：block=" + block
-                                + " / particle=" + particle);
-            }
+            // ★★★ 1.1.0（地壳震击）：**允许同时写 particle 与 block** —— 语义是
+            //   「粒子画范围的**边界环**，方块粒子铺**环内区域**」（用户逐字：
+            //   「使用火焰粒子环+在环内区域持续产生泥土破碎粒子」）。
+            //   ★ 只写 block（掘墓者）仍然是"沿边界撒方块粒子"，行为一字未变；
+            //     执行层见 {@code SpellCaster#emitFx} 的 allCells 分支。
         }
         // ★★ 2026-10-18：**纯视觉闪电**（键 `fx.lightning`，用户裁定
         //   「暴风雨的落雷+海王的落泪（雷）；其他全去掉」）。

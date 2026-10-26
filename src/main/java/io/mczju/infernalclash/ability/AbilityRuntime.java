@@ -202,12 +202,27 @@ public final class AbilityRuntime {
      */
     public void onSummonSpawn(Entity summon, Card card, String matchId, Side side,
                               UUID owner, MatchService match) {
+        onSummonSpawn(summon, card, matchId, side, owner, match, java.util.List.of());
+    }
+
+    /**
+     * ★★★ <b>带「本组独有能力」的重载</b>（1.1.0 新增）。
+     *
+     * <p>逐组能力的出处见 {@code Card.Summon.Group#abilities}（巫术壁垒：史莱姆不扔火球、
+     * 骑手扔）。实际生效的能力 = <b>卡级 {@code summon.abilities} ＋ 这里的 {@code extra}</b>，
+     * ★ 两处都保留（组级是"额外"，不是"覆盖"）—— 与法术 {@code SUMMON} 效果的
+     * {@code group.abilities} 同一口径。
+     *
+     * @param extra 这个组独有的能力（{@code null} ⇒ 空表）
+     */
+    public void onSummonSpawn(Entity summon, Card card, String matchId, Side side,
+                              UUID owner, MatchService match, List<Card.Ability> extra) {
         if (summon == null || !summon.isValid()) {
             warnOnce("spawn-invalid", "[IC] 能力触发跳过：召唤物为 null 或已失效"
                     + "（卡 " + cardId(card) + "，matchId=" + matchId + "）");
             return;
         }
-        List<Card.Ability> abilities = abilitiesOf(card);
+        List<Card.Ability> abilities = mergedAbilities(card, extra);
         if (abilities.isEmpty()) {
             return;
         }
@@ -1287,6 +1302,27 @@ public final class AbilityRuntime {
             return List.of();
         }
         return card.summon().abilities();
+    }
+
+    /**
+     * ★ <b>卡级能力 ＋ 本组独有能力</b>（1.1.0；见 {@code Card.Summon.Group#abilities}）。
+     *
+     * <p>顺序 = 先卡级、后组级（组级排后面 ⇒ 同样的 {@code id} 会晚一步注册，
+     * 与"组级更具体"的直觉一致）。★ 两者都为空 ⇒ 返回空表（调用方直接 return，零开销）。
+     */
+    private static List<Card.Ability> mergedAbilities(Card card, List<Card.Ability> extra) {
+        List<Card.Ability> base = abilitiesOf(card);
+        if (extra == null || extra.isEmpty()) {
+            return base;
+        }
+        if (base.isEmpty()) {
+            return List.copyOf(extra);
+        }
+        java.util.List<Card.Ability> merged =
+                new java.util.ArrayList<>(base.size() + extra.size());
+        merged.addAll(base);
+        merged.addAll(extra);
+        return List.copyOf(merged);
     }
 
     /**

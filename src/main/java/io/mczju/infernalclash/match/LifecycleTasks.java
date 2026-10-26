@@ -26,6 +26,37 @@ public final class LifecycleTasks {
 
     private final List<BukkitTask> tasks = new ArrayList<>();
 
+    /**
+     * ★★★ <b>「收尾时要顺带做的事」</b>（1.1.0 新增，囚笼编织者的蜘蛛网）。
+     *
+     * <h2>为什么需要它</h2>
+     * 有的机制**不是任务**，但同样必须在对局结束时清理：
+     * 囚笼编织者把方块换成蜘蛛网（8 秒后自己还原），而<b>对局可能在 8 秒之内结束</b> ——
+     * 那时它的还原任务会被 {@link #cancelAll()} 取消，蜘蛛网就<b>永久留在竞技场</b>
+     * （下一局的地板上到处是网）。这正是 {@code docs/04} §12.3 点名的那类"跨局泄漏"，
+     * 只不过泄漏的是<b>方块</b>而不是实体。
+     *
+     * <h2>口径</h2>
+     * <ul>
+     *   <li>回调在 {@code cancelAll()} 里、<b>所有任务取消之后</b>执行（先停手，再还原）；</li>
+     *   <li>回调本身抛异常 ⇒ <b>吞掉并继续</b>（收尾绝不能因为一个回调中断）；</li>
+     *   <li>回调清空 ⇒ 重复调用 {@code cancelAll()} 不会重复执行（幂等）。</li>
+     * </ul>
+     */
+    private final List<Runnable> cancelHooks = new ArrayList<>();
+
+    /** 登记一个「对局收尾时执行一次」的回调（幂等：同一个回调对象只登记一次）。 */
+    public void onCancel(Runnable hook) {
+        if (hook != null && !cancelHooks.contains(hook)) {
+            cancelHooks.add(hook);
+        }
+    }
+
+    /** 已登记多少条收尾回调（测试用）。 */
+    public int cancelHookCount() {
+        return cancelHooks.size();
+    }
+
     /** 登记一个已提交的任务。 */
     public void track(BukkitTask task) {
         if (task != null) {
@@ -68,6 +99,16 @@ public final class LifecycleTasks {
             }
         }
         tasks.clear();
+        // ★★★ 1.1.0：任务停完之后再跑「还原类」回调（例如把蜘蛛网换回原方块）。
+        //   ★ 逐个 try：一条回调失败不能挡住后面的（收尾必须做完）。
+        for (Runnable hook : cancelHooks) {
+            try {
+                hook.run();
+            } catch (Throwable ignored) {
+                // 同上：收尾不因一条回调中断
+            }
+        }
+        cancelHooks.clear();
         return cancelled;
     }
 }

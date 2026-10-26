@@ -77,6 +77,9 @@ final class RayAttackService {
     /** 下一次可以射的 tick（格挡：让 {@code interval-ticks} 生效）。 */
     private final Map<UUID, Long> nextShot = new LinkedHashMap<>();
 
+    /** 部署期到期 tick（键 = 单位 UUID；只对写了 {@code summon.deploy} 的卡有值）。 */
+    private final Map<UUID, Long> deployReady = new LinkedHashMap<>();
+
     RayAttackService(UnitRegistry registry, CardCatalog catalog, Logger logger) {
         this.registry = registry;
         this.catalog = catalog;
@@ -111,12 +114,22 @@ final class RayAttackService {
             if (target == null) {
                 continue;   // 没目标 ⇒ 不射（也让"目标一出现立刻射第一根"）
             }
-            // ★★★ 2026-10-21（用户实机报的缺陷）：「**海王只会站在自家防御塔这里不动，劲弩手也是**」
-            //   —— 根因是"技能射程"被做成了 `target-radius`（索敌半径）：8 格内没敌人 ⇒ 没目标 ⇒ 不移动。
-            //   ⇒ 射程改由 `ray.range` 管：**目标超出射程 ⇒ 这一拍不射，也不消耗节拍**
-            //   （单位照常朝目标走，走进射程立刻开火）。
-            double distance = mob.getEyeLocation().distance(target.getLocation());
-            if (distance > ray.range()) {
+            // ★★★ 1.1.0（用户第 2 条）：「需要能够索敌到敌方的**空中单位**（如恶魂、快乐恶魂等）」。
+            //   根因（旧实现）：射程判定用的是**3D 距离**（眼睛 → 目标位置）≤ range，
+            //   而恶魂/快乐恶魂飞到目标上方时高度差远远超过 8 ⇒ **永远不开火**。
+            //   ⇒ 射程改成**水平距离（X/Z）**：飞在头顶的空中单位落在 8 格水平圈里就能打，
+            //     射线本身照常朝目标**身体中心往上**打（`fire()` 里的方向没变）。
+            //   ★ 地面目标的行为不变：水平 ≤ 3D，判据只放宽不收紧（原来能打的一定还能打）。
+            //   ★ 竖直方向的兜底仍由 `MAX_RANGE`（64 格，射线长度上限）负责。
+            double horizontal = horizontalDistance(mob.getEyeLocation(), target.getLocation());
+            if (horizontal > ray.range()) {
+                continue;
+            }
+            // ★★★ 1.1.0（远古监视者）：「放置后需要 **4 秒**时间部署，这 4 秒内**没有 ai**」
+            //   ⇒ 部署期结束前**不发**射线（判据与音效读同一份 `summon.deploy`）。
+            //   ★ 记的是"第一次看到它的 tick + deploy.ticks"，失败方向是"晚一点开火"。
+            Long readyAt = deployReadyAt(id, mob, ray, nowTick);
+            if (readyAt != null && nowTick < readyAt) {
                 continue;
             }
             Long due = nextShot.get(id);
@@ -128,16 +141,62 @@ final class RayAttackService {
         }
     }
 
+    /**
+     * ★ 部署期（{@code summon.deploy}）的到期 tick；没有部署期 ⇒ {@code null}。
+     *
+     * <p>只在**第一次**看到这个单位时算一次（{@code computeIfAbsent}）：那个时刻就是它出生的
+     * 那一轮 tick（{@code CombatDirector} 每 tick 都跑），误差 ≤ 1 tick。
+     */
+    private Long deployReadyAt(UUID id, Mob mob, Card.Ray ray, long nowTick) {
+        Card card = cardOf(mob);
+        if (card == null || card.summon() == null || card.summon().extra().deploy() == null) {
+            return null;
+        }
+        int ticks = card.summon().extra().deploy().ticks();
+        return deployReady.computeIfAbsent(id, key -> nowTick + ticks);
+    }
+
+    /** 这个单位的卡（解析失败只告警一次 ⇒ {@code null}）。 */
+    private Card cardOf(Mob mob) {
+        try {
+            String cardId = registry.cardIdOf(mob);
+            return cardId == null || catalog == null ? null : catalog.cards().get(cardId);
+        } catch (Throwable t) {
+            logger.warning("[IC] 解析卡配置失败（实体 " + mob.getUniqueId() + "）：" + t);
+            return null;
+        }
+    }
+
+    /** 两个位置的**水平**（X/Z）距离 —— 空中单位的高度差不参与射程判定（见调用点）。 */
+    static double horizontalDistance(Location from, Location to) {
+        if (from == null || to == null || from.getWorld() == null || to.getWorld() == null
+                || !from.getWorld().equals(to.getWorld())) {
+            return Double.MAX_VALUE;
+        }
+        return horizontalDistance(from.getX(), from.getZ(), to.getX(), to.getZ());
+    }
+
+    /**
+     * ★ 纯数学版本（可离线单测；{@link Location} 那个只是加了一层"世界必须相同"的守卫）。
+     *
+     * @return 二维欧氏距离（不是 {@code max(|dx|,|dz|)}）
+     */
+    static double horizontalDistance(double fromX, double fromZ, double toX, double toZ) {
+        return Math.hypot(fromX - toX, fromZ - toZ);
+    }
+
     /** 场上的单位消失 / 对局结束：忘掉缓存（避免 UUID 复用与内存滞留）。 */
     void forget(UUID id) {
         resolved.remove(id);
         nextShot.remove(id);
+        deployReady.remove(id);
     }
 
     /** 对局收尾：整表清空。 */
     void clear() {
         resolved.clear();
         nextShot.clear();
+        deployReady.clear();
     }
 
     /** 这个单位有没有射线（解析一次并缓存；卡池里没有它 ⇒ 缓存 {@code null}）。 */
